@@ -8,6 +8,7 @@
 #include "ext/standard/php_var.h"
 #include "ext/spl/spl_iterators.h"
 #include "zend_globals.h"
+#include "zend_exceptions.h"
 #include "php_nii.h"
 #include "func.h"
 #include "system/base/object.h"
@@ -113,9 +114,101 @@ PHP_METHOD(Object, init){
 /* }}} */
 
 /** {{{ public Object::__get()
+    public function __get($name)
+    {
+        $getter = 'get' . $name;
+        if (method_exists($this, $getter)) {
+            return $this->$getter();
+        } elseif (method_exists($this, 'set' . $name)) {
+            throw new InvalidCallException('Getting write-only property: ' . get_class($this) . '::' . $name);
+        } else {
+            throw new UnknownPropertyException('Getting unknown property: ' . get_class($this) . '::' . $name);
+        }
+    }
 */
 PHP_METHOD(Object, __get){
+	char *name, *getter;
+	int name_len, getter_len;
+	zval *method_exists_return_zv=NULL;
 
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name, &name_len) == FAILURE) {
+		return;
+	}
+
+	/*$getter = 'get' . $name;*/
+	getter_len = spprintf(&getter, 0, "get%s", name);
+	zval *getter_zv;
+	NII_NEW_STRING(getter_zv, getter);
+
+	/* method_exists($this,$getter) */
+	if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, getThis(), getter_zv) == SUCCESS) {
+		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+			/* return $this->$getter();*/
+			zval *getter_retval_zv;
+
+			if (nii_call_class_method_0(getThis(), getter, &getter_retval_zv) == SUCCESS) {
+				RETVAL_ZVAL(getter_retval_zv, 1, 0);
+				
+				NII_PTR_DTOR(method_exists_return_zv);
+				NII_PTR_DTOR(getter_zv);
+				NII_PTR_DTOR(getter_retval_zv);
+				return;
+			}
+			
+		}
+	}
+
+	NII_PTR_DTOR(method_exists_return_zv);
+	//get class name
+	int dup;
+	const char *classname;
+	zend_uint classname_len;
+	dup = zend_get_object_classname(getThis(), &classname, &classname_len TSRMLS_CC);
+
+	/*method_exists($this, 'set' . $name)*/
+	char *setter;
+	int setter_len;
+	zval *setter_zv;
+
+	setter_len = spprintf(&setter, 0, "set%s", name);
+	NII_NEW_STRING(setter_zv, setter);
+
+	if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, getThis(), setter_zv) == SUCCESS) {
+		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+			/* throw new InvalidCallException('Getting write-only property: ' . get_class($this) . '::' . $name); */
+
+			char *message;
+			int message_len;
+			zval *message_zv;
+
+			message_len = spprintf(&message, 0, "Getting write-only property: %s::%s", classname, name);
+			NII_NEW_STRING(message_zv, message);
+
+			zval *invalidcallexception_zv;
+			MAKE_STD_ZVAL(invalidcallexception_zv);
+
+			if (nii_new_class_instance_1(&invalidcallexception_zv, "nii\\base\\InvalidCallException", message_zv TSRMLS_CC) == SUCCESS) {
+				zend_throw_exception_object(invalidcallexception_zv TSRMLS_CC);
+				return;
+			}
+		}
+	}
+
+
+	char *message;
+	int message_len;
+	zval *message_zv;
+
+	message_len = spprintf(&message, 0, "Getting unknown property: %s::%s", classname, name);
+	NII_NEW_STRING(message_zv, message);
+
+	zval *unknownpropertyexception;
+	MAKE_STD_ZVAL(unknownpropertyexception);
+
+	if (nii_new_class_instance_1(&unknownpropertyexception, "nii\\base\\UnknownPropertyException", message_zv TSRMLS_CC) == SUCCESS) {
+		zend_throw_exception_object(unknownpropertyexception TSRMLS_CC);
+		return;
+	}
 }
 /* }}} */
 
@@ -143,7 +236,37 @@ PHP_METHOD(Object, __unset){
 /** {{{ public Object::__call()
 */
 PHP_METHOD(Object, __call){
+	char *name;
+	int name_len;
 
+	zval *params_zv;
+	zval *unknownmethodexception_zv;
+	MAKE_STD_ZVAL(unknownmethodexception_zv);
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa", &name, &name_len, &params_zv) == FAILURE) {
+		return;
+	}
+
+	//get class name
+	int dup;
+	const char *classname;
+	zend_uint classname_len;
+	dup = zend_get_object_classname(getThis(), &classname, &classname_len TSRMLS_CC);
+
+	char *message;
+	int message_len;
+	zval *message_zv;
+
+	message_len = spprintf(&message, 0, "Unknown method: %s::%s()", classname, name);
+	NII_NEW_STRING(message_zv, message);
+
+	//UnknownMethodException('Unknown method: ' . get_class($this) . "::$name()");
+	if (nii_new_class_instance_1(&unknownmethodexception_zv, "nii\\base\\UnknownMethodException", message_zv TSRMLS_CC) == SUCCESS) {
+		zend_throw_exception_object(unknownmethodexception_zv TSRMLS_CC);
+		return;
+	}
+	return;
+	
 }
 /* }}} */
 
