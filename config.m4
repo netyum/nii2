@@ -8,7 +8,19 @@ if test "$PHP_NII" = "yes"; then
 	func.c \
 	\
 	system/base/object.c \
+	\
+	dnl exception class
+	\
 	system/base/exception.c \
+	system/base/unknownmethodexception.c \
+	system/base/unknownclassexception.c \
+	system/base/unknownpropertyexception.c \
+	system/base/userexception.c \
+	system/base/invalidcallexception.c \
+	system/base/invalidconfigexception.c \
+	system/base/notsupportedexception.c \
+	system/base/invalidparamexception.c \
+	system/base/invalidrouteexception.c \
 	,
   $ext_shared)
 fi

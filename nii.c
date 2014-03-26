@@ -33,7 +33,17 @@
 /* base class */
 #include "system/base/object.h"
 #include "system/base/exception.h"
+#include "system/base/unknownmethodexception.h"
+#include "system/base/unknownclassexception.h"
+#include "system/base/unknownpropertyexception.h"
+#include "system/base/userexception.h"
+#include "system/base/invalidcallexception.h"
+#include "system/base/invalidconfigexception.h"
+#include "system/base/notsupportedexception.h"
+#include "system/base/invalidparamexception.h"
+#include "system/base/invalidrouteexception.h"
 
+  
 
 
 
@@ -92,7 +102,20 @@ PHP_MINIT_FUNCTION(nii)
 
 	/* base class */
 	NII_CLASS(base_object);
+
+
+	/* exception */
 	NII_CLASS(base_exception);
+	NII_CLASS(base_unknownmethodexception);
+	NII_CLASS(base_unknownclassexception);
+	NII_CLASS(base_unknownpropertyexception);
+	NII_CLASS(base_userexception);
+	NII_CLASS(base_invalidcallexception);
+	NII_CLASS(base_invalidconfigexception);
+	NII_CLASS(base_notsupportedexception);
+	NII_CLASS(base_invalidparamexception);
+	NII_CLASS(base_invalidrouteexception);
+
 
 	return SUCCESS;
 }

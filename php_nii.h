@@ -39,10 +39,10 @@ extern zend_module_entry nii_module_entry;
 #define NII_VERSION 					"1.1.14-dev"
 
 /* Declaration Class */
-#define NII_CLASS_FUNCTION(name)   	ZEND_MINIT_FUNCTION(nii_##name)
+#define NII_CLASS_FUNCTION(name)   	ZEND_MINIT_FUNCTION(nii_ ##name)
 
 /* Call Class */
-#define NII_CLASS(name)	 			ZEND_MODULE_STARTUP_N(nii_##name)(INIT_FUNC_ARGS_PASSTHRU)
+#define NII_CLASS(name)	 			ZEND_MODULE_STARTUP_N(nii_ ##name)(INIT_FUNC_ARGS_PASSTHRU)
 
 /* Declaration Class Method */
 #define NII_CLASS_METHODS(name) const zend_function_entry nii_ ##name## _method_entry[] =
@@ -89,7 +89,7 @@ extern zend_module_entry nii_module_entry;
 	{ \
 		zend_class_entry ce; \
 		INIT_NS_CLASS_ENTRY(ce, #ns, #class_name, nii_ ##name## _method_entry); \
-		nii_ ##name## _ce = zend_register_internal_class_ex(&ce, parent_name, parent TSRMLS_CC); \
+		nii_ ##name## _ce = zend_register_internal_class_ex(&ce, parent_name, NULL TSRMLS_CC); \
 		if (!nii_ ##name## _ce) { \
 			nii_inherit_not_found(parent, ZEND_NS_NAME(#ns, #class_name)); \
 			return FAILURE;	\
