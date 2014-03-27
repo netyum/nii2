@@ -3,4 +3,5 @@ make clean
 ./configure --with-php-config=/usr/bin/php-config
 make
 make install
-php -m
+#php -m
+php tests/nii_base_object.phpt

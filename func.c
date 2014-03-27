@@ -145,130 +145,130 @@ int nii_call_class_static_method_2_no(zval *object, char *class_name, char *meth
 }
 
 
-int nii_call_user_fun(const char *function_name, zval **retval_ptr_ptr, zend_uint param_count, zval **params[]) {
-	TSRMLS_FETCH();
+int nii_call_user_fun(const char *function_name, zval **retval_ptr_ptr, zend_uint param_count, zval **params[] TSRMLS_DC) {
 	zval *func_name;
 	NII_NEW_STRING(func_name, function_name);
-
+	php_printf("nii_call_user_fun: %s\n", function_name);
 	if (call_user_function_ex(EG(function_table), NULL, func_name, retval_ptr_ptr, param_count, params, 1, NULL TSRMLS_CC) == FAILURE) {
+		php_printf("ERRRRRRRRRRR\n");
 		return FAILURE;
 	}
+			php_printf("OKOKOKKOO\n");
 	NII_PTR_DTOR(func_name);
 	return SUCCESS;
 }
 
-int nii_call_user_fun_0(const char *func_name, zval **retval) {
-	if (nii_call_user_fun(func_name, retval, 0, NULL) == FAILURE) {
+int nii_call_user_fun_0(const char *func_name, zval **retval TSRMLS_DC) {
+	if (nii_call_user_fun(func_name, retval, 0, NULL TSRMLS_CC) == FAILURE) {
 		return FAILURE;
 	}
 	return SUCCESS;
 }
 
-int nii_call_user_fun_0_no(const char *func_name) {
+int nii_call_user_fun_0_no(const char *func_name TSRMLS_DC) {
 	zval *retval;
 	int status;
-	status = nii_call_user_fun(func_name, &retval, 0, NULL);
+	status = nii_call_user_fun(func_name, &retval, 0, NULL TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }
 
-int nii_call_user_fun_1(const char *func_name, zval **retval, zval *param) {
+int nii_call_user_fun_1(const char *func_name, zval **retval, zval *param TSRMLS_DC) {
 	zval **params[1];
 	params[0] = &param;
 
-	if (nii_call_user_fun(func_name, retval, 1, params) == FAILURE) {
+	if (nii_call_user_fun(func_name, retval, 1, params TSRMLS_CC) == FAILURE) {
 		return FAILURE;
 	}
 	return SUCCESS;
 }
 
-int nii_call_user_fun_1_no(const char *func_name, zval *param) {
+int nii_call_user_fun_1_no(const char *func_name, zval *param TSRMLS_DC) {
 	zval **params[1], *retval;
 	int status;
 	params[0] = &param;
-	status = nii_call_user_fun(func_name, &retval, 1, params);
+	status = nii_call_user_fun(func_name, &retval, 1, params TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }
 
-int nii_call_user_fun_2(const char *func_name, zval **retval, zval *param1, zval *param2) {
+int nii_call_user_fun_2(const char *func_name, zval **retval, zval *param1, zval *param2 TSRMLS_DC) {
 	zval **params[2];
 	params[0] = &param1; params[1] = &param2;
-
-	if (nii_call_user_fun(func_name, retval, 2, params) == FAILURE) {
+	php_printf("nii_call_user_fun_2: %s\n", func_name);
+	if (nii_call_user_fun(func_name, retval, 2, params TSRMLS_CC) == FAILURE) {
 		return FAILURE;
 	}
 	return SUCCESS;
 }
 
-int nii_call_user_fun_2_no(const char *func_name, zval *param1, zval *param2) {
+int nii_call_user_fun_2_no(const char *func_name, zval *param1, zval *param2 TSRMLS_DC) {
 	zval **params[2], *retval;
 	int status;
 	params[0] = &param1; params[1] = &param2;
-	status = nii_call_user_fun(func_name, &retval, 2, params);
+	status = nii_call_user_fun(func_name, &retval, 2, params TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }
 
-int nii_call_user_fun_3(const char *func_name, zval **retval, zval *param1, zval *param2, zval *param3) {
+int nii_call_user_fun_3(const char *func_name, zval **retval, zval *param1, zval *param2, zval *param3 TSRMLS_DC) {
 	zval **params[3];
 	params[0] = &param1; params[1] = &param2; params[2] = &param3;
 
-	if (nii_call_user_fun(func_name, retval, 3, params) == FAILURE) {
+	if (nii_call_user_fun(func_name, retval, 3, params TSRMLS_CC) == FAILURE) {
 		return FAILURE;
 	}
 	return SUCCESS;
 }
 
-int nii_call_user_fun_3_no(const char *func_name, zval *param1, zval *param2, zval *param3) {
+int nii_call_user_fun_3_no(const char *func_name, zval *param1, zval *param2, zval *param3 TSRMLS_DC) {
 	zval **params[3], *retval;
 	int status;
 	params[0] = &param1; params[1] = &param2; params[2] = &param3;
-	status = nii_call_user_fun(func_name, &retval, 3, params);
+	status = nii_call_user_fun(func_name, &retval, 3, params TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }
 
-int nii_call_user_fun_4(const char *func_name, zval **retval, zval *param1, zval *param2, zval *param3, zval *param4) {
+int nii_call_user_fun_4(const char *func_name, zval **retval, zval *param1, zval *param2, zval *param3, zval *param4 TSRMLS_DC) {
 	zval **params[4];
 	params[0] = &param1; params[1] = &param2; params[2] = &param3; params[3] = &param4;
 
-	if (nii_call_user_fun(func_name, retval, 4, params) == FAILURE) {
+	if (nii_call_user_fun(func_name, retval, 4, params TSRMLS_CC) == FAILURE) {
 		return FAILURE;
 	}
 	return SUCCESS;
 }
 
-int nii_call_user_fun_4_no(const char *func_name, zval *param1, zval *param2, zval *param3, zval *param4) {
+int nii_call_user_fun_4_no(const char *func_name, zval *param1, zval *param2, zval *param3, zval *param4 TSRMLS_DC) {
 	zval **params[4], *retval;
 	int status;
 	params[0] = &param1; params[1] = &param2; params[2] = &param3; params[3] = &param4;
-	status = nii_call_user_fun(func_name, &retval, 4, params);
+	status = nii_call_user_fun(func_name, &retval, 4, params TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }
 
-int nii_call_user_fun_5(const char *func_name, zval **retval, zval *param1, zval *param2, zval *param3, zval *param4, zval *param5) {
+int nii_call_user_fun_5(const char *func_name, zval **retval, zval *param1, zval *param2, zval *param3, zval *param4, zval *param5 TSRMLS_DC) {
 	zval **params[5];
 	params[0] = &param1; params[1] = &param2; params[2] = &param3; params[3] = &param4; params[4] = &param5;
 
-	if (nii_call_user_fun(func_name, retval, 5, params) == FAILURE) {
+	if (nii_call_user_fun(func_name, retval, 5, params TSRMLS_CC) == FAILURE) {
 		return FAILURE;
 	}
 	return SUCCESS;
 }
 
-int nii_call_user_fun_5_no(const char *func_name, zval *param1, zval *param2, zval *param3, zval *param4, zval *param5) {
+int nii_call_user_fun_5_no(const char *func_name, zval *param1, zval *param2, zval *param3, zval *param4, zval *param5 TSRMLS_DC) {
 	zval **params[5], *retval;
 	int status;
 	params[0] = &param1; params[1] = &param2; params[2] = &param3; params[3] = &param4; params[4] = &param5;
-	status = nii_call_user_fun(func_name, &retval, 5, params);
+	status = nii_call_user_fun(func_name, &retval, 5, params TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }
 
-int nii_call_class_method(zval *object, char *method_name, zval **retval_ptr_ptr, zend_uint param_count, zval **params[]) {
-	TSRMLS_FETCH();
+int nii_call_class_method(zval *object, char *method_name, zval **retval_ptr_ptr, zend_uint param_count, zval **params[] TSRMLS_DC) {
 	zend_class_entry *ce;
 	zval *func_name;
 
@@ -294,54 +294,54 @@ int nii_call_class_method(zval *object, char *method_name, zval **retval_ptr_ptr
 	return SUCCESS;
 }
 
-int nii_call_class_method_no(zval *object, char *method_name, zend_uint param_count, zval **params[]) {
+int nii_call_class_method_no(zval *object, char *method_name, zend_uint param_count, zval **params[] TSRMLS_DC) {
 	zval *retval;
 	int status;
-	status = nii_call_class_method(object, method_name, &retval, param_count, params);
+	status = nii_call_class_method(object, method_name, &retval, param_count, params TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }
 
-int nii_call_class_method_0(zval *object, char *method_name, zval **retval) {
-	return nii_call_class_method(object, method_name, retval, 0, NULL);
+int nii_call_class_method_0(zval *object, char *method_name, zval **retval TSRMLS_DC) {
+	return nii_call_class_method(object, method_name, retval, 0, NULL TSRMLS_CC);
 }
 
-int nii_call_class_method_0_no(zval *object, char *method_name) {
+int nii_call_class_method_0_no(zval *object, char *method_name TSRMLS_DC) {
 	zval *retval;
 	int status;
-	status = nii_call_class_method(object, method_name, &retval, 0, NULL);
+	status = nii_call_class_method(object, method_name, &retval, 0, NULL TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }
 
-int nii_call_class_method_1(zval *object, char *method_name, zval **retval, zval *param) {
+int nii_call_class_method_1(zval *object, char *method_name, zval **retval, zval *param TSRMLS_DC) {
 	zval **params[1];
 	params[0] = &param;
-	return nii_call_class_method(object, method_name, retval, 1, params);
+	return nii_call_class_method(object, method_name, retval, 1, params TSRMLS_CC);
 }
 
-int nii_call_class_method_1_no(zval *object, char *method_name, zval *param) {
+int nii_call_class_method_1_no(zval *object, char *method_name, zval *param TSRMLS_DC) {
 	zval **params[1], *retval;
 	params[0] = &param;
 	int status;
-	status = nii_call_class_method(object, method_name, &retval, 1, params);
+	status = nii_call_class_method(object, method_name, &retval, 1, params TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }
 
-int nii_call_class_method_2(zval *object, char *method_name, zval **retval, zval *param1, zval *param2) {
+int nii_call_class_method_2(zval *object, char *method_name, zval **retval, zval *param1, zval *param2 TSRMLS_DC) {
 	zval **params[2];
 	params[0] = &param1;
 	params[1] = &param2;
-	return nii_call_class_method(object, method_name, retval, 2, params);
+	return nii_call_class_method(object, method_name, retval, 2, params TSRMLS_CC);
 }
 
-int nii_call_class_method_2_no(zval *object, char *method_name, zval *param1, zval *param2) {
+int nii_call_class_method_2_no(zval *object, char *method_name, zval *param1, zval *param2 TSRMLS_DC) {
 	zval **params[2], *retval;
 	params[0] = &param1;
 	params[1] = &param2;
 	int status;
-	status = nii_call_class_method(object, method_name, &retval, 2, params);
+	status = nii_call_class_method(object, method_name, &retval, 2, params TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }
@@ -391,7 +391,7 @@ int nii_new_class_instance(zval **return_value, char *class_name, zend_uint para
 	ALLOC_INIT_ZVAL(*return_value);
 	object_init_ex(*return_value, ce);
 	if (nii_class_has_constructor(*return_value TSRMLS_CC)) {
-		if (nii_call_class_method_no(*return_value, "__construct" , param_count, params) == FAILURE) {
+		if (nii_call_class_method_no(*return_value, "__construct" , param_count, params TSRMLS_CC) == FAILURE) {
 			NII_PTR_DTOR(*return_value);
 			return FAILURE;
 		}

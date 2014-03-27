@@ -14,6 +14,173 @@
 #include "system/base/object.h"
 
 
+uint nii_get_class(zval *ce, const char **classname TSRMLS_DC)
+{
+	int dup;
+	//const char *classname;
+	zend_uint classname_len;
+	dup = zend_get_object_classname(ce, classname, &classname_len TSRMLS_CC);
+	return (uint) classname_len;
+}
+
+int nii_getter(zval *ce, char *name, zval **retval TSRMLS_DC)
+{
+	char *getter;
+	int getter_len;
+	zval *metval;
+
+	getter_len = spprintf(&getter, 0, "get%s", name);
+	zval *getter_zv;
+	php_printf("IIIIIIIIII\n");
+	/* method_exists($this,$getter) */
+	if (nii_call_user_fun_2("method_exists", &metval, ce, getter_zv TSRMLS_CC) == SUCCESS) {
+
+		return SUCCESS;
+		/*php_printf("DDDDDDDD");
+		if (Z_TYPE_P(metval) == IS_BOOL && Z_BVAL_P(metval) == 1) {
+			php_printf("HHHHHHHHHHHH");
+			if (nii_call_class_method_0(ce, getter, retval TSRMLS_CC) == SUCCESS) {
+				//NII_PTR_DTOR(method_exists_return_zv);
+				//NII_PTR_DTOR(getter_zv);
+				//efree(getter);
+				return SUCCESS;
+			}
+			
+		}*/
+	}
+	php_printf("JJJJJJJJJJJ\n");
+	//NII_PTR_DTOR(method_exists_return_zv);
+	//NII_PTR_DTOR(getter_zv);
+	//efree(getter);
+	return FAILURE;
+}
+
+int nii_getter_exception(zval *ce, char *name, const char *classname TSRMLS_DC)
+{
+	char *getter;
+	int getter_len;
+	zval *method_exists_return_zv=NULL;
+	zval *getter_zv;
+
+	getter_len = spprintf(&getter, 0, "get%s", name);
+	NII_NEW_STRING(getter_zv, getter);
+
+	if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, ce, getter_zv TSRMLS_CC) == SUCCESS) {
+		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+			char *message;
+			int message_len;
+			zval *message_zv;
+
+			message_len = spprintf(&message, 0, "Setting read-only property: %s::%s", classname, name);
+			NII_NEW_STRING(message_zv, message);
+
+			zval *invalidcallexception_zv;
+			MAKE_STD_ZVAL(invalidcallexception_zv);
+
+			if (nii_new_class_instance_1(&invalidcallexception_zv, "nii\\base\\InvalidCallException", message_zv TSRMLS_CC) == SUCCESS) {
+				zend_throw_exception_object(invalidcallexception_zv TSRMLS_CC);
+				return SUCCESS;
+			}
+		}
+	}
+	return FAILURE;
+}
+
+int nii_setter(zval *ce, char *name, zval *value, zval **retval TSRMLS_DC)
+{
+	char *setter;
+	int setter_len;
+	zval *method_exists_return_zv=NULL;
+	zval *setter_zv;
+
+	setter_len = spprintf(&setter, 0, "set%s", name);
+	NII_NEW_STRING(setter_zv, setter);
+
+	/* method_exists($this,$setter) */
+	if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, ce, setter_zv TSRMLS_CC) == SUCCESS) {
+		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+			/*return $this->$setter($value);*/
+			if (nii_call_class_method_1(ce, setter, retval, value TSRMLS_CC) == SUCCESS) {
+				NII_PTR_DTOR(method_exists_return_zv);
+				NII_PTR_DTOR(setter_zv);
+				return SUCCESS;
+			}
+			
+		}
+	}
+	return FAILURE;
+}
+
+int nii_setter_exception(zval *ce, char *name, const char *classname TSRMLS_DC)
+{
+	zval *method_exists_return_zv=NULL;
+
+	char *setter;
+	int setter_len;
+	zval *setter_zv;
+
+	setter_len = spprintf(&setter, 0, "set%s", name);
+	NII_NEW_STRING(setter_zv, setter);
+
+	if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, ce, setter_zv TSRMLS_CC) == SUCCESS) {
+		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+			/* throw new InvalidCallException('Getting write-only property: ' . get_class($this) . '::' . $name); */
+
+			char *message;
+			int message_len;
+			zval *message_zv;
+
+			message_len = spprintf(&message, 0, "Getting write-only property: %s::%s", classname, name);
+			NII_NEW_STRING(message_zv, message);
+
+			zval *invalidcallexception_zv;
+			MAKE_STD_ZVAL(invalidcallexception_zv);
+
+			if (nii_new_class_instance_1(&invalidcallexception_zv, "nii\\base\\InvalidCallException", message_zv TSRMLS_CC) == SUCCESS) {
+				zend_throw_exception_object(invalidcallexception_zv TSRMLS_CC);
+				return SUCCESS;
+			}
+		}
+	}
+	return FAILURE;
+}
+
+void nii_getter_unknow_exception(zval *ce, char *name, const char *classname TSRMLS_DC)
+{
+	char *message;
+	int message_len;
+	zval *message_zv;
+
+	message_len = spprintf(&message, 0, "Getting unknown property: %s::%s", classname, name);
+	NII_NEW_STRING(message_zv, message);
+
+	zval *unknownpropertyexception;
+	MAKE_STD_ZVAL(unknownpropertyexception);
+
+	if (nii_new_class_instance_1(&unknownpropertyexception, "nii\\base\\UnknownPropertyException", message_zv TSRMLS_CC) == SUCCESS) {
+		zend_throw_exception_object(unknownpropertyexception TSRMLS_CC);
+	}
+}
+
+void nii_setter_unknow_exception(zval *ce, char *name, const char *classname TSRMLS_DC)
+{
+	char *message;
+	int message_len;
+	zval *message_zv;
+
+	message_len = spprintf(&message, 0, "Setting unknown property: %s::%s", classname, name);
+	NII_NEW_STRING(message_zv, message);
+
+	zval *unknownpropertyexception;
+	MAKE_STD_ZVAL(unknownpropertyexception);
+
+	if (nii_new_class_instance_1(&unknownpropertyexception, "nii\\base\\UnknownPropertyException", message_zv TSRMLS_CC) == SUCCESS) {
+		zend_throw_exception_object(unknownpropertyexception TSRMLS_CC);
+	}
+}
+
+
+
 NII_CLASS_DECLARE_ENTRY(base_object);
 
 /** {{{ ARG_INFO
@@ -100,7 +267,7 @@ PHP_METHOD(Object, className){
 /** {{{ public Object::__construct()
 */
 PHP_METHOD(Object, __construct){
-    if (nii_call_class_method_0_no(getThis(), "init") != SUCCESS) {
+    if (nii_call_class_method_0_no(getThis(), "init" TSRMLS_CC) != SUCCESS) {
         return;
     }
 }
@@ -127,106 +294,104 @@ PHP_METHOD(Object, init){
     }
 */
 PHP_METHOD(Object, __get){
-	char *name, *getter;
-	int name_len, getter_len;
-	zval *method_exists_return_zv=NULL;
+	char *name;
+	int name_len;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name, &name_len) == FAILURE) {
 		return;
 	}
 
-	/*$getter = 'get' . $name;*/
-	getter_len = spprintf(&getter, 0, "get%s", name);
-	zval *getter_zv;
-	NII_NEW_STRING(getter_zv, getter);
+	if (nii_getter(getThis(), name, &return_value TSRMLS_CC) == SUCCESS) return;
 
-	/* method_exists($this,$getter) */
-	if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, getThis(), getter_zv) == SUCCESS) {
-		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
-			/* return $this->$getter();*/
-			zval *getter_retval_zv;
-
-			if (nii_call_class_method_0(getThis(), getter, &getter_retval_zv) == SUCCESS) {
-				RETVAL_ZVAL(getter_retval_zv, 1, 0);
-				
-				NII_PTR_DTOR(method_exists_return_zv);
-				NII_PTR_DTOR(getter_zv);
-				NII_PTR_DTOR(getter_retval_zv);
-				return;
-			}
-			
-		}
-	}
-
-	NII_PTR_DTOR(method_exists_return_zv);
 	//get class name
-	int dup;
-	const char *classname;
-	zend_uint classname_len;
-	dup = zend_get_object_classname(getThis(), &classname, &classname_len TSRMLS_CC);
+	const char *classname; 
+	uint classname_len;
+	classname_len = nii_get_class(getThis(), &classname TSRMLS_CC);
 
-	/*method_exists($this, 'set' . $name)*/
-	char *setter;
-	int setter_len;
-	zval *setter_zv;
+	if (nii_setter_exception(getThis(), name, classname TSRMLS_CC) == SUCCESS) return;
 
-	setter_len = spprintf(&setter, 0, "set%s", name);
-	NII_NEW_STRING(setter_zv, setter);
-
-	if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, getThis(), setter_zv) == SUCCESS) {
-		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
-			/* throw new InvalidCallException('Getting write-only property: ' . get_class($this) . '::' . $name); */
-
-			char *message;
-			int message_len;
-			zval *message_zv;
-
-			message_len = spprintf(&message, 0, "Getting write-only property: %s::%s", classname, name);
-			NII_NEW_STRING(message_zv, message);
-
-			zval *invalidcallexception_zv;
-			MAKE_STD_ZVAL(invalidcallexception_zv);
-
-			if (nii_new_class_instance_1(&invalidcallexception_zv, "nii\\base\\InvalidCallException", message_zv TSRMLS_CC) == SUCCESS) {
-				zend_throw_exception_object(invalidcallexception_zv TSRMLS_CC);
-				return;
-			}
-		}
-	}
-
-
-	char *message;
-	int message_len;
-	zval *message_zv;
-
-	message_len = spprintf(&message, 0, "Getting unknown property: %s::%s", classname, name);
-	NII_NEW_STRING(message_zv, message);
-
-	zval *unknownpropertyexception;
-	MAKE_STD_ZVAL(unknownpropertyexception);
-
-	if (nii_new_class_instance_1(&unknownpropertyexception, "nii\\base\\UnknownPropertyException", message_zv TSRMLS_CC) == SUCCESS) {
-		zend_throw_exception_object(unknownpropertyexception TSRMLS_CC);
-		return;
-	}
+	nii_getter_unknow_exception(getThis(), name, classname TSRMLS_CC);
+	return;
 }
 /* }}} */
 
 /** {{{ public Object::__set()
+    public function __set($name, $value)
+    {
+        $setter = 'set' . $name;
+        if (method_exists($this, $setter)) {
+            $this->$setter($value);
+        } elseif (method_exists($this, 'get' . $name)) {
+            throw new InvalidCallException('Setting read-only property: ' . get_class($this) . '::' . $name);
+        } else {
+            throw new UnknownPropertyException('Setting unknown property: ' . get_class($this) . '::' . $name);
+        }
+    }
 */
 PHP_METHOD(Object, __set){
+	char *name;
+	int name_len;
+	zval *method_exists_return_zv=NULL;
+	zval *value;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &name, &name_len, &value) == FAILURE) {
+		return;
+	}
 
+	if (nii_setter(getThis(), name, value, &return_value TSRMLS_CC)) return;
+
+	//get class name
+	const char *classname; 
+	uint classname_len;
+	classname_len = nii_get_class(getThis(), &classname TSRMLS_CC);
+
+	if (nii_getter_exception(getThis(), name, classname TSRMLS_CC) == SUCCESS) return;
+
+	nii_setter_unknow_exception(getThis(), name, classname TSRMLS_CC);
+	return;
 }
 /* }}} */
 
 /** {{{ public Object::__isset()
+    public function __isset($name)
+    {
+        $getter = 'get' . $name;
+        if (method_exists($this, $getter)) {
+            return $this->$getter() !== null;
+        } else {
+            return false;
+        }
+    }
 */
 PHP_METHOD(Object, __isset){
+	char *name;
+	int name_len;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name, &name_len) == FAILURE) {
+		return;
+	}
+
+	zval *getter_value;
+	if (nii_getter(getThis(), name, &getter_value TSRMLS_CC) == SUCCESS) {
+		if (Z_TYPE_P(getter_value) != IS_NULL) {
+			NII_PTR_DTOR(getter_value);
+			RETURN_TRUE;
+		}
+	}
+    RETURN_FALSE;
 
 }
 /* }}} */
 
 /** {{{ public Object::__unset()
+	public function __unset($name)
+    {
+        $setter = 'set' . $name;
+        if (method_exists($this, $setter)) {
+            $this->$setter(null);
+        } elseif (method_exists($this, 'get' . $name)) {
+            throw new InvalidCallException('Unsetting read-only property: ' . get_class($this) . '::' . $name);
+        }
+    }
 */
 PHP_METHOD(Object, __unset){
 
@@ -234,6 +399,10 @@ PHP_METHOD(Object, __unset){
 /* }}} */
 
 /** {{{ public Object::__call()
+	public function __call($name, $params)
+    {
+        throw new UnknownMethodException('Unknown method: ' . get_class($this) . "::$name()");
+    }
 */
 PHP_METHOD(Object, __call){
 	char *name;
@@ -292,6 +461,10 @@ PHP_METHOD(Object, canSetProperty){
 /* }}} */
 
 /** {{{ public Object::hasMethod()
+    public function hasMethod($name)
+    {
+        return method_exists($this, $name);
+    }
 */
 PHP_METHOD(Object, hasMethod){
 	char *name;
@@ -304,7 +477,7 @@ PHP_METHOD(Object, hasMethod){
 
     NII_NEW_STRING(name_zv, name);
     /* method_exists($this, name) */
-    if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, getThis(), name_zv) == SUCCESS) {
+    if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, getThis(), name_zv TSRMLS_CC) == SUCCESS) {
         RETVAL_TRUE;
 
         NII_FREE_ZVAL(name_zv);
