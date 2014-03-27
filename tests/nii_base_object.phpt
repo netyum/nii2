@@ -13,6 +13,7 @@ $o->__call('Hello', array('2'));
 
 class Test extends \nii\base\Object
 {
+	public $max;
 	function getName() {
 		return "this test class name method";
 	}
@@ -47,8 +48,25 @@ $t = new Test();
 
 //test __unset
 //$t->__unset('value');
-$t->__unset('name');
+//$t->__unset('name');
 
+//test canSetProperty
+
+//var_dump($t->canSetProperty('value'));
+//var_dump($t->canSetProperty('name'));
+//var_dump($t->canSetProperty('max', false));
+
+//test canGetProperty
+
+//var_dump($t->canGetProperty('value'));
+//var_dump($t->canGetProperty('name'));
+//var_dump($t->canGetProperty('max'));
+
+//test hasProperty
+var_dump($t->hasProperty('value'));
+var_dump($t->hasProperty('name'));
+var_dump($t->hasProperty('max'));
+var_dump($t->hasProperty('ffffff'));
 ?>
 --EXPECT--
 nii\base\Object

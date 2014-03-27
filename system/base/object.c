@@ -414,8 +414,8 @@ PHP_METHOD(Object, __unset){
 	zval *method_exists_return_zv=NULL;
 	zval *setter_zv;
 
-	setter_len = spprintf(&setter, 0, "set%s", name);
 	NII_NEW_STRING(setter_zv, setter);
+	setter_len = spprintf(&setter, 0, "set%s", name);
 
     if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, getThis(), setter_zv TSRMLS_CC) == SUCCESS) {
 		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
@@ -489,10 +489,9 @@ PHP_METHOD(Object, __call){
 	}
 
 	//get class name
-	int dup;
-	const char *classname;
-	zend_uint classname_len;
-	dup = zend_get_object_classname(getThis(), &classname, &classname_len TSRMLS_CC);
+	const char *classname; 
+	uint classname_len;
+	classname_len = nii_get_class(getThis(), &classname TSRMLS_CC);
 
 	char *message;
 	int message_len;
@@ -514,21 +513,147 @@ PHP_METHOD(Object, __call){
 /** {{{ public Object::hasProperty()
 */
 PHP_METHOD(Object, hasProperty){
+	char *name;
+	int name_len;
+	zval *name_zv, *method_exists_return_zv=NULL;
 
+	zend_bool check_vars = 1;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &name, &name_len, &check_vars) == FAILURE) {
+		return;
+	}
+
+	zval *check_vars_zv;
+	NII_NEW_BOOL(check_vars_zv, check_vars);
+	NII_NEW_STRING(name_zv, name);
+
+	if (nii_call_class_method_2(getThis(), "canGetProperty", &method_exists_return_zv, name_zv, check_vars_zv TSRMLS_CC) == SUCCESS) {
+		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+			NII_PTR_DTOR(method_exists_return_zv);
+			NII_PTR_DTOR(name_zv);
+			NII_PTR_DTOR(check_vars_zv);
+			RETURN_TRUE;
+		}
+	}
+
+	NII_PTR_DTOR(method_exists_return_zv);
+	ZVAL_BOOL(check_vars_zv, 0);
+	
+	if (nii_call_class_method_2(getThis(), "canSetProperty", &method_exists_return_zv, name_zv, check_vars_zv TSRMLS_CC) == SUCCESS) {
+		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+			NII_PTR_DTOR(method_exists_return_zv);
+			NII_PTR_DTOR(name_zv);
+			NII_PTR_DTOR(check_vars_zv);
+			RETURN_TRUE;
+		}
+	}
+	NII_PTR_DTOR(method_exists_return_zv);
+	NII_PTR_DTOR(name_zv);
+	NII_PTR_DTOR(check_vars_zv);
+	RETURN_FALSE;
 }
 /* }}} */
 
 /** {{{ public Object::canGetProperty()
 */
 PHP_METHOD(Object, canGetProperty){
+	char *name;
+	int name_len;
+	zval *name_zv, *method_exists_return_zv=NULL;
 
+	zend_bool check_vars = 1;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &name, &name_len, &check_vars) == FAILURE) {
+		return;
+	}
+
+
+	char *getter;
+	int getter_len;
+	zval *getter_zv;
+
+	getter_len = spprintf(&getter, 0, "get%s", name);
+	NII_NEW_STRING(getter_zv, getter);
+
+    if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, getThis(), getter_zv TSRMLS_CC) == SUCCESS) {
+		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+			NII_PTR_DTOR(method_exists_return_zv);
+			NII_PTR_DTOR(getter_zv);
+			efree(getter);
+			RETURN_TRUE;
+		}
+    }
+
+	NII_PTR_DTOR(method_exists_return_zv);
+	NII_PTR_DTOR(getter_zv);
+	efree(getter);
+
+    if (check_vars) {
+    	NII_NEW_STRING(name_zv, name);
+		if (nii_call_user_fun_2("property_exists", &method_exists_return_zv, getThis(), name_zv TSRMLS_CC) == SUCCESS) {
+			if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+				NII_PTR_DTOR(method_exists_return_zv);
+				NII_PTR_DTOR(name_zv);
+				RETURN_TRUE;
+			}
+		}
+    }
+
+	NII_PTR_DTOR(method_exists_return_zv);
+	NII_PTR_DTOR(name_zv);
+	RETURN_FALSE;
 }
 /* }}} */
 
 /** {{{ public Object::canSetProperty()
+	public function canSetProperty($name, $checkVars = true)
+    {
+        return method_exists($this, 'set' . $name) || $checkVars && property_exists($this, $name);
+    }
 */
 PHP_METHOD(Object, canSetProperty){
+	char *name;
+	int name_len;
+	zval *name_zv, *method_exists_return_zv=NULL;
 
+	zend_bool check_vars = 1;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &name, &name_len, &check_vars) == FAILURE) {
+		return;
+	}
+
+
+	char *setter;
+	int setter_len;
+	zval *setter_zv;
+
+	setter_len = spprintf(&setter, 0, "set%s", name);
+	NII_NEW_STRING(setter_zv, setter);
+
+    if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, getThis(), setter_zv TSRMLS_CC) == SUCCESS) {
+		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+			NII_PTR_DTOR(method_exists_return_zv);
+			NII_PTR_DTOR(setter_zv);
+			efree(setter);
+			RETURN_TRUE;
+		}
+    }
+
+	NII_PTR_DTOR(method_exists_return_zv);
+	NII_PTR_DTOR(setter_zv);
+	efree(setter);
+
+    if (check_vars) {
+    	NII_NEW_STRING(name_zv, name);
+		if (nii_call_user_fun_2("property_exists", &method_exists_return_zv, getThis(), name_zv TSRMLS_CC) == SUCCESS) {
+			if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+				NII_PTR_DTOR(method_exists_return_zv);
+				NII_PTR_DTOR(name_zv);
+				RETURN_TRUE;
+			}
+		}
+    }
+
+	NII_PTR_DTOR(method_exists_return_zv);
+	NII_PTR_DTOR(name_zv);
+	RETURN_FALSE;
 }
 /* }}} */
 
@@ -550,16 +675,13 @@ PHP_METHOD(Object, hasMethod){
     NII_NEW_STRING(name_zv, name);
     /* method_exists($this, name) */
     if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, getThis(), name_zv TSRMLS_CC) == SUCCESS) {
-        RETVAL_TRUE;
-
-        NII_FREE_ZVAL(name_zv);
-        NII_FREE_ZVAL(method_exists_return_zv);
-
-        return;
+		NII_PTR_DTOR(method_exists_return_zv);
+		NII_PTR_DTOR(name_zv);
+		RETURN_TRUE;
     }
 
-    NII_FREE_ZVAL(name_zv);
-    NII_FREE_ZVAL(method_exists_return_zv);
+	NII_PTR_DTOR(method_exists_return_zv);
+	NII_PTR_DTOR(name_zv);
     RETURN_FALSE;
 }
 /* }}} */
