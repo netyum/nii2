@@ -27,31 +27,29 @@ int nii_getter(zval *ce, char *name, zval **retval TSRMLS_DC)
 {
 	char *getter;
 	int getter_len;
-	zval *metval;
+	zval *method_exists_return_zv=NULL;
+	zval *getter_zv;
 
 	getter_len = spprintf(&getter, 0, "get%s", name);
-	zval *getter_zv;
-	php_printf("IIIIIIIIII\n");
+	NII_NEW_STRING(getter_zv, getter);
+	
 	/* method_exists($this,$getter) */
-	if (nii_call_user_fun_2("method_exists", &metval, ce, getter_zv TSRMLS_CC) == SUCCESS) {
+	if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, ce, getter_zv TSRMLS_CC) == SUCCESS) {
+		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+			NII_PTR_DTOR(method_exists_return_zv);
+			NII_PTR_DTOR(getter_zv);
 
-		return SUCCESS;
-		/*php_printf("DDDDDDDD");
-		if (Z_TYPE_P(metval) == IS_BOOL && Z_BVAL_P(metval) == 1) {
-			php_printf("HHHHHHHHHHHH");
 			if (nii_call_class_method_0(ce, getter, retval TSRMLS_CC) == SUCCESS) {
-				//NII_PTR_DTOR(method_exists_return_zv);
-				//NII_PTR_DTOR(getter_zv);
-				//efree(getter);
+				efree(getter);
 				return SUCCESS;
 			}
 			
-		}*/
+		}
 	}
-	php_printf("JJJJJJJJJJJ\n");
-	//NII_PTR_DTOR(method_exists_return_zv);
-	//NII_PTR_DTOR(getter_zv);
-	//efree(getter);
+
+	NII_PTR_DTOR(method_exists_return_zv);
+	NII_PTR_DTOR(getter_zv);
+	efree(getter);
 	return FAILURE;
 }
 
@@ -86,7 +84,7 @@ int nii_getter_exception(zval *ce, char *name, const char *classname TSRMLS_DC)
 	return FAILURE;
 }
 
-int nii_setter(zval *ce, char *name, zval *value, zval **retval TSRMLS_DC)
+int nii_setter(zval *ce, char *name, zval *value TSRMLS_DC)
 {
 	char *setter;
 	int setter_len;
@@ -100,14 +98,19 @@ int nii_setter(zval *ce, char *name, zval *value, zval **retval TSRMLS_DC)
 	if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, ce, setter_zv TSRMLS_CC) == SUCCESS) {
 		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
 			/*return $this->$setter($value);*/
-			if (nii_call_class_method_1(ce, setter, retval, value TSRMLS_CC) == SUCCESS) {
+			if (nii_call_class_method_1_no(ce, setter, value TSRMLS_CC) == SUCCESS) {
 				NII_PTR_DTOR(method_exists_return_zv);
 				NII_PTR_DTOR(setter_zv);
+				efree(setter);
 				return SUCCESS;
 			}
 			
 		}
 	}
+
+	NII_PTR_DTOR(method_exists_return_zv);
+	NII_PTR_DTOR(setter_zv);
+	efree(setter);
 	return FAILURE;
 }
 
@@ -300,8 +303,13 @@ PHP_METHOD(Object, __get){
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name, &name_len) == FAILURE) {
 		return;
 	}
+	zval *retval;
 
-	if (nii_getter(getThis(), name, &return_value TSRMLS_CC) == SUCCESS) return;
+	if (nii_getter(getThis(), name, &retval TSRMLS_CC) == SUCCESS) {
+		ZVAL_ZVAL(return_value, retval, 1, 0);
+		NII_PTR_DTOR(retval);
+		return;
+	}
 
 	//get class name
 	const char *classname; 
@@ -337,7 +345,7 @@ PHP_METHOD(Object, __set){
 		return;
 	}
 
-	if (nii_setter(getThis(), name, value, &return_value TSRMLS_CC)) return;
+	if (nii_setter(getThis(), name, value TSRMLS_CC)) return;
 
 	//get class name
 	const char *classname; 
@@ -394,7 +402,71 @@ PHP_METHOD(Object, __isset){
     }
 */
 PHP_METHOD(Object, __unset){
+	char *name;
+    int name_len;
 
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name, &name_len) == FAILURE) {
+	  return;
+	}
+
+	char *setter;
+	int setter_len;
+	zval *method_exists_return_zv=NULL;
+	zval *setter_zv;
+
+	setter_len = spprintf(&setter, 0, "set%s", name);
+	NII_NEW_STRING(setter_zv, setter);
+
+    if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, getThis(), setter_zv TSRMLS_CC) == SUCCESS) {
+		if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+			zval *value;
+			NII_NEW_NULL(value);
+			if (nii_setter(getThis(), name, value TSRMLS_CC) == SUCCESS) {
+			    NII_PTR_DTOR(method_exists_return_zv);
+			    NII_PTR_DTOR(setter_zv);
+			    NII_PTR_DTOR(value);
+			    efree(setter);
+				return;
+			}
+		}
+    }
+
+    NII_PTR_DTOR(setter_zv);
+    NII_PTR_DTOR(method_exists_return_zv);
+    efree(setter);
+
+	//get class name
+	const char *classname;
+	uint classname_len;
+	classname_len = nii_get_class(getThis(), &classname TSRMLS_CC);
+
+    char *getter;
+    int getter_len;
+    zval *getter_zv;
+    getter_len = spprintf(&getter, 0, "get%s", name);
+    NII_NEW_STRING(getter_zv, getter);
+    if (nii_call_user_fun_2("method_exists", &method_exists_return_zv, getThis(), getter_zv TSRMLS_CC) == SUCCESS) {
+          if (Z_TYPE_P(method_exists_return_zv) == IS_BOOL && Z_BVAL_P(method_exists_return_zv) == 1) {
+               char *message;
+               int message_len;
+               zval *message_zv;
+
+               message_len = spprintf(&message, 0, "Unsetting read-only property: %s::%s", classname, name);
+               NII_NEW_STRING(message_zv, message);
+
+               zval *invalidcallexception;
+               MAKE_STD_ZVAL(invalidcallexception);
+
+               if (nii_new_class_instance_1(&invalidcallexception, "nii\\base\\InvalidCallException", message_zv TSRMLS_CC) == SUCCESS) {
+                    zend_throw_exception_object(invalidcallexception TSRMLS_CC);
+               }
+          }
+    }
+
+    NII_PTR_DTOR(method_exists_return_zv);
+    NII_PTR_DTOR(getter_zv);
+    efree(getter);
+    return;
 }
 /* }}} */
 

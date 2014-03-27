@@ -148,12 +148,10 @@ int nii_call_class_static_method_2_no(zval *object, char *class_name, char *meth
 int nii_call_user_fun(const char *function_name, zval **retval_ptr_ptr, zend_uint param_count, zval **params[] TSRMLS_DC) {
 	zval *func_name;
 	NII_NEW_STRING(func_name, function_name);
-	php_printf("nii_call_user_fun: %s\n", function_name);
 	if (call_user_function_ex(EG(function_table), NULL, func_name, retval_ptr_ptr, param_count, params, 1, NULL TSRMLS_CC) == FAILURE) {
-		php_printf("ERRRRRRRRRRR\n");
+		//NII_PTR_DTOR(func_name);
 		return FAILURE;
 	}
-			php_printf("OKOKOKKOO\n");
 	NII_PTR_DTOR(func_name);
 	return SUCCESS;
 }
@@ -195,7 +193,6 @@ int nii_call_user_fun_1_no(const char *func_name, zval *param TSRMLS_DC) {
 int nii_call_user_fun_2(const char *func_name, zval **retval, zval *param1, zval *param2 TSRMLS_DC) {
 	zval **params[2];
 	params[0] = &param1; params[1] = &param2;
-	php_printf("nii_call_user_fun_2: %s\n", func_name);
 	if (nii_call_user_fun(func_name, retval, 2, params TSRMLS_CC) == FAILURE) {
 		return FAILURE;
 	}
@@ -275,10 +272,12 @@ int nii_call_class_method(zval *object, char *method_name, zval **retval_ptr_ptr
 	NII_NEW_STRING(func_name, method_name);
 
 	if (Z_TYPE_P(object) != IS_OBJECT) {
+		NII_PTR_DTOR(func_name);
 		php_error_docref(NULL TSRMLS_CC, E_ERROR, "Call to method %s() on a non object", method_name);
 		return FAILURE;
 	}
 
+	
 	ce = Z_OBJCE_P(object);
 	if (ce->parent) {
 		nii_find_scope(ce, method_name TSRMLS_CC);
@@ -287,6 +286,7 @@ int nii_call_class_method(zval *object, char *method_name, zval **retval_ptr_ptr
 	}
 
 	if (call_user_function_ex(&ce->function_table, &object, func_name, retval_ptr_ptr, param_count, params, 0, NULL TSRMLS_CC) == FAILURE) {
+		NII_PTR_DTOR(func_name);
 		return FAILURE;
 	}
 

@@ -18,7 +18,7 @@ class Test extends \nii\base\Object
 	}
 
 	public function setValue($name) {
-		echo $name."\n";
+		var_dump($name)."\n";
 	}
 }
 
@@ -28,22 +28,26 @@ $t = new Test();
 //test __get
 
 //*
-echo $t->name;
+//echo $t->name;
 //echo $t->sssss;
 //*/
 
 //test __set
 
-/*
-$t->value = "syang";
+
+//$t->value = "syang";
 //echo $t->value."\n";
-$t->age="@@@@@@";
-*/
+//$t->age="@@@@@@";
+
 
 //test __isset
 //var_dump($t->__isset('value'));
 //echo "\n";
 //var_dump($t->__isset('name'));
+
+//test __unset
+//$t->__unset('value');
+$t->__unset('name');
 
 ?>
 --EXPECT--
