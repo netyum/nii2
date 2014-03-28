@@ -9,7 +9,6 @@
 #include "php_nii.h"
 #include "func.h"
 
-
 void nii_inherit_not_found(char *class_name, char *inherit_name) {
 	fprintf(stderr, "Error: Class to extend '%s' was not found when registering class '%s'\n", class_name, inherit_name);
 }

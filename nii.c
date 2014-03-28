@@ -32,6 +32,7 @@
 
 /* base class */
 #include "system/base/object.h"
+#include "system/base/component.h"
 #include "system/base/exception.h"
 #include "system/base/unknownmethodexception.h"
 #include "system/base/unknownclassexception.h"
@@ -102,7 +103,7 @@ PHP_MINIT_FUNCTION(nii)
 
 	/* base class */
 	NII_CLASS(base_object);
-
+	NII_CLASS(base_component);
 
 	/* exception */
 	NII_CLASS(base_exception);

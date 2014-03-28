@@ -6,8 +6,10 @@ if test "$PHP_NII" = "yes"; then
   PHP_NEW_EXTENSION(nii,
     nii.c \
 	func.c \
+	nii_func.c \
 	\
 	system/base/object.c \
+	system/base/component.c \
 	\
 	dnl exception class
 	\
