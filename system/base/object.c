@@ -76,7 +76,7 @@ ZEND_END_ARG_INFO()
 /* }}} */
 
 
-/** {{{ string static public Object::className()
+/** {{{ public static Object::className()
 */
 PHP_METHOD(Object, className){
     if (zend_parse_parameters_none() == FAILURE) {

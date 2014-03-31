@@ -30,8 +30,11 @@
 #include "php_nii.h"
 #include "func.h"
 
+#include "system/base_nii.h"
+
 /* base class */
 #include "system/base/object.h"
+#include "system/base/behavior.h"
 #include "system/base/component.h"
 #include "system/base/exception.h"
 #include "system/base/unknownmethodexception.h"
@@ -100,9 +103,11 @@ PHP_MINIT_FUNCTION(nii)
 	REGISTER_INI_ENTRIES();
 	*/
 
+	NII_CLASS(base_nii);
 
 	/* base class */
 	NII_CLASS(base_object);
+	NII_CLASS(base_behavior);
 	NII_CLASS(base_component);
 
 	/* exception */

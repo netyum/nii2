@@ -4,4 +4,4 @@ make clean
 make
 make install
 #php -m
-php tests/nii_base_object.phpt
+php tests/nii_base_component.phpt
