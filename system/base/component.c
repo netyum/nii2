@@ -13,6 +13,7 @@
 #include "func.h"
 #include "nii_func.h"
 #include "system/base/object.h"
+#include "system/base/behavior.h"
 #include "system/base/component.h"
 
 NII_CLASS_DECLARE_ENTRY(base_component);
@@ -656,6 +657,11 @@ PHP_METHOD(Component, hasMethod){
     }
 */
 PHP_METHOD(Component, behaviors){
+	zval *retval;
+	NII_NEW_ARRAY(retval);
+	RETVAL_ZVAL(retval, 1, 0);
+	NII_PTR_DTOR(retval);
+	return;
 }
 /* }}} */
 
@@ -679,6 +685,42 @@ PHP_METHOD(Component, hasEventHandlers){
     }
 */
 PHP_METHOD(Component, on){
+	char *name;
+	int *name_len;
+	zval *handler_zv, *data_zv=NULL;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz|z", &name, &name_len, &handler_zv, &data_zv) == FAILURE) {
+		return;
+	}
+
+	if (!data_zv) {
+		NII_NEW_NULL(data_zv);
+	}
+
+	if (nii_call_class_method_0_no(getThis(), "ensureBehaviors" TSRMLS_CC) != SUCCESS) {
+		return;
+	}
+
+	zval *events_zv;
+	events_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_events"), 0 TSRMLS_CC);
+	
+	zval *class;
+	if (zend_hash_find(Z_ARRVAL_P(events_zv), name, (uint)name_len, (void **)&class) == SUCCESS) {
+
+		zval *tmp_array_zv;
+		NII_NEW_ARRAY(tmp_array_zv);
+		add_next_index_zval(tmp_array_zv, handler_zv);
+		add_next_index_zval(tmp_array_zv, data_zv);
+
+		add_next_index_zval(events_zv, tmp_array_zv);
+
+		zend_update_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_events"), events_zv TSRMLS_CC);
+
+		NII_PTR_DTOR(tmp_array_zv);
+	}
+
+	NII_PTR_DTOR(data_zv);
+	return;
 }
 /* }}} */
 
@@ -710,6 +752,82 @@ PHP_METHOD(Component, on){
     }
 */
 PHP_METHOD(Component, off){
+	char *name;
+	int *name_len;
+	zval *handler_zv = NULL;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|z", &name, &name_len, &handler_zv) == FAILURE) {
+		return;
+	}
+
+	if (!handler_zv) {
+		NII_NEW_NULL(handler_zv);
+	}
+
+	if (nii_call_class_method_0_no(getThis(), "ensureBehaviors" TSRMLS_CC) != SUCCESS) {
+		return;
+	}
+
+	zval *events_zv;
+	events_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_events"), 0 TSRMLS_CC);
+	
+	zval *class;
+	if (zend_hash_find(Z_ARRVAL_P(events_zv), name, (uint)name_len, (void **)&class) != SUCCESS) {
+		NII_PTR_DTOR(handler_zv);
+		RETURN_FALSE;
+	}
+
+	if (Z_TYPE_P(handler_zv) == IS_NULL) {
+		add_assoc_unset(events_zv, name);
+		zend_update_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_events"), events_zv TSRMLS_CC);
+		RETURN_TRUE;
+	}
+
+	int removed = 0;
+	if (Z_TYPE_P(class) == IS_ARRAY) {
+		HashPosition    pos;
+		zval **entry;
+		char *string_key;
+		uint string_key_len;
+		ulong index;
+
+	    zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(class), &pos);
+	    while (zend_hash_get_current_data_ex(Z_ARRVAL_P(class), (void **)&entry, &pos) == SUCCESS) {
+	    	
+	    	zval *event_0_zv;
+	    	if (zend_hash_index_find(Z_ARRVAL_P(*entry), 0, (void **)&event_0_zv) != SUCCESS) {
+	    		return;
+	    	}
+			zval compare_result;
+			//$event[0] === $handler
+			is_identical_function(&compare_result, event_0_zv, handler_zv TSRMLS_CC);
+            if (Z_LVAL(compare_result)) {
+            	if (zend_hash_get_current_key_ex(Z_ARRVAL_P(class), &string_key, &string_key_len, &index, 0, &pos) == HASH_KEY_IS_STRING) {
+            		add_assoc_unset(events_zv, string_key);
+            	}
+            	else {
+            		add_index_unset(events_zv, index);
+            	}
+	        	removed = 1;
+            }
+	        zend_hash_move_forward_ex(Z_ARRVAL_P(class), &pos);
+	    }
+
+	    if (removed == 1) {
+	    	//$this->_events[$name] = array_values($this->_events[$name]);
+	    	zval *retval;
+	    	if (nii_call_user_fun_1("array_values", &retval, class TSRMLS_CC) == SUCCESS) {
+	    		add_assoc_zval(events_zv, name, retval);
+	    		zend_update_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_events"), events_zv TSRMLS_CC);
+	    	}
+	    }
+
+		zval *retbool;
+		NII_NEW_BOOL(retbool, (long) removed);
+		RETVAL_BOOL(retbool);
+		NII_PTR_DTOR(retbool);
+		return;
+	}
 }
 /* }}} */
 
@@ -753,6 +871,30 @@ PHP_METHOD(Component, trigger){
     }
 */
 PHP_METHOD(Component, getBehavior){
+	char *name;
+	int *name_len;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name, &name_len) == FAILURE) {
+		return;
+	}
+
+	if (nii_call_class_method_0_no(getThis(), "ensureBehaviors" TSRMLS_CC) != SUCCESS) {
+		return;
+	}
+
+	zval *behaviors_zv;
+	behaviors_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_behaviors"), 0 TSRMLS_CC);
+	
+	zval *class;
+	if (zend_hash_find(Z_ARRVAL_P(behaviors_zv), name, (uint)name_len, (void **)&class) == SUCCESS) {
+		RETVAL_ZVAL(class, 1, 0);
+	}
+	else {
+		RETVAL_NULL();
+	}
+	NII_PTR_DTOR(behaviors_zv);
+	NII_PTR_DTOR(class);
+	return;
 }
 /* }}} */
 
@@ -765,6 +907,14 @@ PHP_METHOD(Component, getBehavior){
     }
 */
 PHP_METHOD(Component, getBehaviors){
+	if (nii_call_class_method_0_no(getThis(), "ensureBehaviors" TSRMLS_CC) != SUCCESS) {
+		return;
+	}
+	zval *behaviors_zv;
+	behaviors_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_behaviors"), 0 TSRMLS_CC);
+	RETVAL_ZVAL(behaviors_zv, 1, 0);
+	NII_PTR_DTOR(behaviors_zv);
+	return;
 }
 /* }}} */
 
@@ -777,6 +927,32 @@ PHP_METHOD(Component, getBehaviors){
     }
 */
 PHP_METHOD(Component, attachBehavior){
+	zval *behavior_zv;
+	char *name;
+	int *name_len;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sa", &name, &name_len, &behavior_zv) == FAILURE) {
+		return;
+	}
+
+	if (nii_call_class_method_0_no(getThis(), "ensureBehaviors" TSRMLS_CC) != SUCCESS) {
+		return;
+	}
+
+	zval *retval;
+	zval *name_zv;
+	NII_NEW_STRING(name_zv, name);
+
+	if (nii_call_class_method_2(getThis(), "attachBehaviorInternal", &retval, name_zv, behavior_zv TSRMLS_CC) != SUCCESS) {
+		NII_PTR_DTOR(name_zv);
+		return;
+	}
+
+	
+	RETVAL_ZVAL(retval, 1, 0);
+	NII_PTR_DTOR(name_zv);
+	NII_PTR_DTOR(retval);
+	return;
 }
 /* }}} */
 
@@ -796,6 +972,10 @@ PHP_METHOD(Component, attachBehaviors){
 		return;
 	}
 
+	if (nii_call_class_method_0_no(getThis(), "ensureBehaviors" TSRMLS_CC) != SUCCESS) {
+		return;
+	}
+
 	HashPosition    pos;
 	zval **entry;
 	char *string_key;
@@ -805,20 +985,13 @@ PHP_METHOD(Component, attachBehaviors){
     zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(behaviors_zv), &pos);
     while (zend_hash_get_current_data_ex(Z_ARRVAL_P(behaviors_zv), (void **)&entry, &pos) == SUCCESS) {
         if (zend_hash_get_current_key_ex(Z_ARRVAL_P(behaviors_zv), &string_key, &string_key_len, &index, 0, &pos) == HASH_KEY_IS_STRING) {
-            php_printf("this string key %s\n", string_key);
-           	if ((*entry)->type != IS_STRING) {
-           		php_printf("number\n");
-           	}
-           	else {
-           		php_printf("string\n");
-           	}
-            //convert_to_string(*entry);
-            //php_var_dump(entry, 1 TSRMLS_CC);
-        }
-        else { // HASH_KEY_IS_LONG
-        	php_printf("this number key %ld\n", index);
-        	convert_to_string(*entry);
-        	php_var_dump(entry, 1 TSRMLS_CC);
+        	zval *name_zv;
+        	NII_NEW_STRING(name_zv, string_key);
+        	if (nii_call_class_method_2_no(getThis(), "attachBehaviorInternal", name_zv, *entry TSRMLS_CC) != SUCCESS) {
+        		NII_PTR_DTOR(name_zv);
+        		return;
+        	}
+        	NII_PTR_DTOR(name_zv);
         }
         zend_hash_move_forward_ex(Z_ARRVAL_P(behaviors_zv), &pos);
     }
@@ -841,6 +1014,38 @@ PHP_METHOD(Component, attachBehaviors){
     }
 */
 PHP_METHOD(Component, detachBehavior){
+	zval *behavior_zv;
+	char *name;
+	int name_len;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &name, &name_len, &behavior_zv) == FAILURE) {
+		return;
+	}
+
+	if (nii_call_class_method_0_no(getThis(), "ensureBehaviors" TSRMLS_CC) != SUCCESS) {
+		return;
+	}
+
+	zval *behaviors_zv;
+	behaviors_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_behaviors"), 0 TSRMLS_CC);
+	if ( Z_TYPE_P(behaviors_zv) != IS_ARRAY) {
+		NII_NEW_ARRAY(behaviors_zv);
+	}
+
+	zval *class;
+	if (zend_hash_find(Z_ARRVAL_P(behaviors_zv), name, name_len, (void **)&class) == SUCCESS) {
+		add_assoc_unset(behaviors_zv, name);
+
+		if (nii_call_class_method_0_no(class, "detach" TSRMLS_CC) != SUCCESS ) {
+			RETVAL_ZVAL(class, 1, 0);
+			return;
+		}
+	}
+	else {
+		RETURN_NULL();
+	}
+
+
 }
 /* }}} */
 
@@ -854,6 +1059,37 @@ PHP_METHOD(Component, detachBehavior){
     }
 */
 PHP_METHOD(Component, detachBehaviors){
+	if (nii_call_class_method_0_no(getThis(), "ensureBehaviors" TSRMLS_CC) != SUCCESS) {
+		return;
+	}
+	zval *behaviors_zv;
+	behaviors_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_behaviors"), 0 TSRMLS_CC);
+
+	if (Z_TYPE_P(behaviors_zv) ==  IS_ARRAY) {
+		HashPosition    pos;
+		zval **entry;
+		char *string_key;
+		uint string_key_len;
+		ulong index;
+
+	    zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(behaviors_zv), &pos);
+	    while (zend_hash_get_current_data_ex(Z_ARRVAL_P(behaviors_zv), (void **)&entry, &pos) == SUCCESS) {
+	        if (zend_hash_get_current_key_ex(Z_ARRVAL_P(behaviors_zv), &string_key, &string_key_len, &index, 0, &pos) == HASH_KEY_IS_STRING) {
+	            zval *name_zv;
+	            NII_NEW_STRING(name_zv, string_key);
+
+				if (nii_call_class_method_1_no(getThis(), "detachBehavior", name_zv TSRMLS_CC) != SUCCESS) {
+					NII_PTR_DTOR(name_zv);
+					NII_PTR_DTOR(behaviors_zv);
+					return;
+				}
+				NII_PTR_DTOR(name_zv);
+	        }
+	        zend_hash_move_forward_ex(Z_ARRVAL_P(behaviors_zv), &pos);
+	    }
+
+	    NII_PTR_DTOR(behaviors_zv);
+	}
 }
 /* }}} */
 
@@ -873,32 +1109,38 @@ PHP_METHOD(Component, ensureBehaviors){
 	behaviors_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_behaviors"), 0 TSRMLS_CC);
 	if ( Z_TYPE_P(behaviors_zv) != IS_ARRAY) {
 		NII_NEW_ARRAY(behaviors_zv);
+		zend_update_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_behaviors"), behaviors_zv TSRMLS_CC);
 	}
 
-	HashPosition    pos;
+	zval *behaviors_retval;
+	if (nii_call_class_method_0(getThis(), "behaviors", &behaviors_retval TSRMLS_CC) != SUCCESS) {
+		NII_PTR_DTOR(behaviors_retval);
+		return;
+	}
+
+	HashPosition pos;
 	zval **entry;
 	char *string_key;
 	uint string_key_len;
 	ulong index;
 
-    zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(behaviors_zv), &pos);
-    while (zend_hash_get_current_data_ex(Z_ARRVAL_P(behaviors_zv), (void **)&entry, &pos) == SUCCESS) {
-        if (zend_hash_get_current_key_ex(Z_ARRVAL_P(behaviors_zv), &string_key, &string_key_len, &index, 0, &pos) == HASH_KEY_IS_STRING) {
-            php_printf("Yii::createObject($behavior); %s", string_key);
+    zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(behaviors_retval), &pos);
+    while (zend_hash_get_current_data_ex(Z_ARRVAL_P(behaviors_retval), (void **)&entry, &pos) == SUCCESS) {
+        if (zend_hash_get_current_key_ex(Z_ARRVAL_P(behaviors_retval), &string_key, &string_key_len, &index, 0, &pos) == HASH_KEY_IS_STRING) {
             zval *name_zv;
             NII_NEW_STRING(name_zv, string_key);
 
 			if (nii_call_class_method_2_no(getThis(), "attachBehaviorInternal", name_zv, *entry TSRMLS_CC) != SUCCESS) {
 				NII_PTR_DTOR(name_zv);
-				NII_PTR_DTOR(behaviors_zv);
+				NII_PTR_DTOR(behaviors_retval);
 				return;
 			}
 			NII_PTR_DTOR(name_zv);
         }
         zend_hash_move_forward_ex(Z_ARRVAL_P(behaviors_zv), &pos);
     }
+    NII_PTR_DTOR(behaviors_retval);
 
-    NII_PTR_DTOR(behaviors_zv);
 }
 /* }}} */
 
@@ -926,13 +1168,35 @@ PHP_METHOD(Component, attachBehaviorInternal){
 		return;
 	}
 
-	php_printf("name=%s", name);
-	php_var_dump(&behavior_zv, 1 TSRMLS_CC);
-	/*if (!instanceof_function(Z_OBJCE_P(behavior_zv), NII_CLASS_ENTRY(base_behavior) TSRMLS_CC))
+	if (!instanceof_function(Z_OBJCE_P(behavior_zv), NII_CLASS_ENTRY(base_behavior) TSRMLS_CC))
 	{
-		//php_printf("ooooo");
-	}*/
+		php_printf("Yii::createObject($behavior);");
+		return;
+	}
 
+	zval *behaviors_zv;
+	behaviors_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_behaviors"), 0 TSRMLS_CC);
+	if ( Z_TYPE_P(behaviors_zv) != IS_ARRAY) {
+		NII_NEW_ARRAY(behaviors_zv);
+	}
+
+	zval *class;
+	if (zend_hash_find(Z_ARRVAL_P(behaviors_zv), name, name_len, (void **)&class) == SUCCESS) {
+		if (nii_call_class_method_0_no(class, "detach" TSRMLS_CC) != SUCCESS ) {
+			return;
+		}
+	}
+
+	if (nii_call_class_method_1_no(behavior_zv, "attach", getThis() TSRMLS_CC) != SUCCESS ) {
+		return;
+	}
+
+	add_assoc_zval(behaviors_zv, name, behavior_zv);
+
+	zend_update_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_behaviors"), behaviors_zv TSRMLS_CC);
+
+	RETVAL_ZVAL(behaviors_zv, 1, 0);
+	return;
 }
 /* }}} */
 
@@ -975,7 +1239,7 @@ NII_CLASS_FUNCTION(base_component) {
 	//AUTO CALL CLASS METHOD
 	NII_NS_CLASS_DECLARE_EX(nii\\base, Component, base_component, NII_CLASS_ENTRY(base_object), "nii\\base\\Object", 0);
 	zend_declare_property_null(NII_CLASS_ENTRY(base_component), NII_SL("_events"), ZEND_ACC_PRIVATE TSRMLS_CC);
-	zend_declare_property_null(NII_CLASS_ENTRY(base_component), NII_SL("_behaviors"), ZEND_ACC_PRIVATE TSRMLS_CC);
+	zend_declare_property_null(NII_CLASS_ENTRY(base_component), NII_SL("_behaviors"), ZEND_ACC_PUBLIC TSRMLS_CC);
 	return SUCCESS;
 }
 /* }}} */

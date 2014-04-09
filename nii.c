@@ -31,6 +31,8 @@
 #include "func.h"
 
 #include "system/base_nii.h"
+#include "system/nii.h"
+
 
 /* base class */
 #include "system/base/object.h"
@@ -102,8 +104,9 @@ PHP_MINIT_FUNCTION(nii)
 	/* If you have INI entries, uncomment these lines
 	REGISTER_INI_ENTRIES();
 	*/
-
 	NII_CLASS(base_nii);
+	NII_CLASS(nii);
+
 
 	/* base class */
 	NII_CLASS(base_object);

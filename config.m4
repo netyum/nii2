@@ -8,6 +8,7 @@ if test "$PHP_NII" = "yes"; then
 	func.c \
 	nii_func.c \
 	\
+	system/nii.c \
 	system/base_nii.c \
 	system/base/object.c \
 	system/base/component.c \

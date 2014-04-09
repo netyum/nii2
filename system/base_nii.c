@@ -272,7 +272,68 @@ PHP_METHOD(BaseNii, autoload){
     }
 */
 PHP_METHOD(BaseNii, createObject){
+	zval *type_zv, *params_zv;
 
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &type_zv, &params_zv) == FAILURE) {
+	  return;
+	}
+
+	if (Z_TYPE_P(params_zv) != IS_ARRAY) {
+		NII_NEW_ARRAY(params_zv);
+	}
+
+	if (Z_TYPE_P(type_zv) == IS_STRING) {
+
+
+	}
+	else if (Z_TYPE_P(type_zv) == IS_ARRAY) {
+		zval *class;
+		if (zend_hash_find(Z_ARRVAL_P(type_zv), NII_SL("class"), (void **)&class) == SUCCESS) {
+
+		}
+		else {
+			zval *message_zv;
+			NII_NEW_STRING(message_zv, "Object configuration must be an array containing a \"class\" element.");
+			zval *invalidconfigexception_zv;
+			MAKE_STD_ZVAL(invalidconfigexception_zv);
+			if (nii_new_class_instance_1(&invalidconfigexception_zv, "nii\\base\\InvalidConfigException", message_zv TSRMLS_CC) == SUCCESS) {
+				zend_throw_exception_object(invalidconfigexception_zv TSRMLS_CC);
+				return;
+			}
+			NII_PTR_DTOR(invalidconfigexception_zv);
+			NII_PTR_DTOR(message_zv);
+		}
+	}
+	else if (Z_TYPE_P(type_zv) == IS_CALLABLE) {
+		zval *retval;
+		if (nii_call_user_fun_2("call_user_func", &retval, type_zv, params_zv TSRMLS_CC) != SUCCESS) {
+			NII_PTR_DTOR(params_zv);
+		}
+		NII_PTR_DTOR(params_zv);
+		RETVAL_ZVAL(retval, 1, 0);
+		NII_PTR_DTOR(retval);
+		return;
+	}
+	else {
+		zval *type_name_zv;
+		if (nii_call_user_fun_1("gettype", &type_name_zv, type_zv TSRMLS_CC) != SUCCESS) {
+			return;
+		}
+		zval *message_zv;
+		NII_NEW_STRING(message_zv, "Unsupported configuration type: ");
+
+		nii_concat(&message_zv, type_name_zv TSRMLS_CC);
+
+		zval *invalidconfigexception_zv;
+		MAKE_STD_ZVAL(invalidconfigexception_zv);
+		if (nii_new_class_instance_1(&invalidconfigexception_zv, "nii\\base\\InvalidConfigException", message_zv TSRMLS_CC) == SUCCESS) {
+			zend_throw_exception_object(invalidconfigexception_zv TSRMLS_CC);
+			return;
+		}
+
+		NII_PTR_DTOR(invalidconfigexception_zv);
+		NII_PTR_DTOR(message_zv);
+	}
 }
 /* }}} */
 
