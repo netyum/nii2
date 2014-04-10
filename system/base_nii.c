@@ -278,7 +278,7 @@ PHP_METHOD(BaseNii, createObject){
 	  return;
 	}
 
-    NII_DEBUG_PRINTF(("There is Yii::createObject\n"));
+    NII_DEBUG_PRINTF(("There is Nii::createObject\n"));
     if (!params_zv) {
         NII_NEW_ARRAY(params_zv);
     }
@@ -292,17 +292,30 @@ PHP_METHOD(BaseNii, createObject){
 
 	}
 	else if (Z_TYPE_P(type_zv) == IS_ARRAY) {
-		zval **class;
-        zval *class_zv;
-        if (zend_hash_find(Z_ARRVAL_P(type_zv), "class", 6, (void **)&class) == SUCCESS) {
-            ZVAL_ZVAL(class_zv, *class, 1, 1);
-            add_assoc_unset(type_zv, "class");
-            if ( zend_hash_del(Z_ARRVAL_P(type_zv), "class", 6) == SUCCESS) {
-                //php_var_dump(&type_zv, 1 TSRMLS_CC);
-            }
-        }
-
-        return;
+	        zval **class;
+                zval *class_zv;
+                if (zend_hash_find(Z_ARRVAL_P(type_zv), NII_SS("class"), (void **)&class) == SUCCESS) {
+		    //char *class_name;
+		    //class_name = estrndup(Z_STRVAL_P(*class), Z_STRLEN_P(*class));
+		    MAKE_STD_ZVAL(class_zv);
+		    ZVAL_ZVAL(class_zv, *class, 1, 0);
+                    if ( zend_hash_del(Z_ARRVAL_P(type_zv), "class", sizeof("class")) == SUCCESS) {
+			//NII_NEW_STRING(class_zv, class_name);
+			//RETVAL_STRING(class_zv, 1);
+			NII_PTR_DTOR(class_zv);
+	                NII_PTR_DTOR(params_zv);
+			//efree(class_name);
+			return;
+                    }
+                    else {
+                        NII_DEBUG_PRINTF(("NO\n"));
+                    }
+	            NII_PTR_DTOR(params_zv);
+                    return;
+                }
+		return;
+	//RETURN_TRUE;
+        //return;
 		/*
             zval *class_zv;
             

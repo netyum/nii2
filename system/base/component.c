@@ -315,6 +315,8 @@ PHP_METHOD(Component, __set){
 		else if (Z_TYPE_P(value) == IS_ARRAY) {
 			zval *retval;
 			if (nii_call_class_static_method_1(NULL, "\\Nii", "createObject", &retval, value TSRMLS_CC) == SUCCESS) {
+NII_DEBUG_PRINTF(("RUN THERE"));
+return;
 				if (nii_call_class_method_2_no(getThis(), "attachBehavior", param_zv, retval TSRMLS_CC) == SUCCESS) {
 					efree(nnew_str);
 					NII_PTR_DTOR(param_zv);
