@@ -2,9 +2,12 @@
 #include "config.h"
 #endif
 
+#include "string.h"
+
 #include "php.h"
 #include "php_ini.h" /* for zend_alter_ini_entry */
 #include "Zend/zend_interfaces.h" /* for zend_call_method_with_* */
+#include "ext/standard/php_string.h"
 #include "ext/standard/php_var.h"
 #include "ext/spl/spl_iterators.h"
 #include "zend_globals.h"
@@ -12,6 +15,7 @@
 #include "php_nii.h"
 #include "func.h"
 #include "nii_func.h"
+#include "system/base_nii.h"
 #include "system/base/object.h"
 #include "system/base/behavior.h"
 #include "system/base/component.h"
@@ -166,6 +170,43 @@ PHP_METHOD(Component, __get){
 		return;
 	}
 
+	if (nii_call_class_method_0_no(getThis(), "ensureBehaviors" TSRMLS_CC) != SUCCESS) {
+		return;
+	}
+
+	zval *behaviors_zv;
+	behaviors_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_behaviors"), 0 TSRMLS_CC);
+
+
+	HashPosition    pos;
+	zval **entry;
+	char *string_key;
+	uint string_key_len;
+	ulong index;
+
+	zval *name_zv;
+	NII_NEW_STRING(name_zv, name);
+
+    zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(behaviors_zv), &pos);
+    while (zend_hash_get_current_data_ex(Z_ARRVAL_P(behaviors_zv), (void **)&entry, &pos) == SUCCESS) {
+    	
+    	zval *retval;
+    	if (nii_call_class_method_1(*entry, "canGetProperty", &retval, name_zv TSRMLS_CC) == SUCCESS) {
+    		if (Z_TYPE_P(retval) == IS_BOOL && Z_BVAL_P(retval) == 1) {
+    			zval *rretval;
+    			if(nii_call_class_method_1(*entry, "__get", &rretval, name_zv TSRMLS_CC) == SUCCESS) {
+    				RETVAL_ZVAL(rretval, 1, 0);
+    				NII_PTR_DTOR(rretval);
+    				NII_PTR_DTOR(retval);
+    				return;
+    				break;
+    			}
+    			NII_PTR_DTOR(rretval);
+    		}
+    	}
+    	NII_PTR_DTOR(retval);
+        zend_hash_move_forward_ex(Z_ARRVAL_P(behaviors_zv), &pos);
+    }
 
 	//get class name
 	const char *classname; 
@@ -218,7 +259,7 @@ PHP_METHOD(Component, __get){
     }
 */
 PHP_METHOD(Component, __set){
-	/*
+	
 	char *name;
 	int name_len;
 	zval *method_exists_return_zv=NULL;
@@ -227,7 +268,64 @@ PHP_METHOD(Component, __set){
 		return;
 	}
 
-	if (nii_setter(getThis(), name, value TSRMLS_CC)) return;
+	if (nii_setter(getThis(), name, value TSRMLS_CC)  == SUCCESS) return;
+
+	int a = strncmp(name, "on ", 3);
+	if (a == 0) {
+		char *nnew_str;
+		char *new_str;
+
+		new_str = estrndup(name+3, name_len-3);
+		nnew_str = php_trim(new_str, name_len-3, NULL, 0, NULL, 3 TSRMLS_CC);
+		efree(new_str);
+
+		zval *param_zv;
+		NII_NEW_STRING(param_zv, nnew_str);
+		if (nii_call_class_method_2_no(getThis(), "on", param_zv, value TSRMLS_CC) == SUCCESS) {
+			efree(nnew_str);
+			NII_PTR_DTOR(param_zv);
+			return;
+		}
+		efree(nnew_str);
+		NII_PTR_DTOR(param_zv);
+	}
+
+	int b = strncmp(name, "as ", 3);
+	if (b == 0) {
+		char *nnew_str;
+		char *new_str;
+		new_str = estrndup(name+3, name_len-3);
+		nnew_str = php_trim(new_str, name_len-3, NULL, 0, NULL, 3 TSRMLS_CC);
+		efree(new_str);
+
+		zval *param_zv;
+		NII_NEW_STRING(param_zv, nnew_str);
+		NII_DEBUG_PRINTF(("There is 1\n"));
+		if (Z_TYPE_P(value) == IS_OBJECT) {
+			if (instanceof_function(Z_OBJCE_P(value), NII_CLASS_ENTRY(base_behavior) TSRMLS_CC))
+			{
+				NII_DEBUG_PRINTF(("There is 3\n"));
+				if (nii_call_class_method_2_no(getThis(), "attachBehavior", param_zv, value TSRMLS_CC) == SUCCESS) {
+					efree(nnew_str);
+					NII_PTR_DTOR(param_zv);
+					return;
+				}
+			}
+		}
+		else if (Z_TYPE_P(value) == IS_ARRAY) {
+			zval *retval;
+			if (nii_call_class_static_method_1(NULL, "\\Nii", "createObject", &retval, value TSRMLS_CC) == SUCCESS) {
+				if (nii_call_class_method_2_no(getThis(), "attachBehavior", param_zv, retval TSRMLS_CC) == SUCCESS) {
+					efree(nnew_str);
+					NII_PTR_DTOR(param_zv);
+					NII_PTR_DTOR(retval);
+					return;
+				}
+			}
+		}
+		efree(nnew_str);
+		NII_PTR_DTOR(param_zv);
+	}
 
 	//get class name
 	const char *classname; 
@@ -238,7 +336,7 @@ PHP_METHOD(Component, __set){
 
 	nii_setter_unknow_exception(getThis(), name, classname TSRMLS_CC);
 	return;
-	*/
+	
 }
 /* }}} */
 
@@ -674,6 +772,35 @@ PHP_METHOD(Component, behaviors){
     }
 */
 PHP_METHOD(Component, hasEventHandlers){
+	char *name;
+	int *name_len;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &name, &name_len) == FAILURE) {
+		return;
+	}
+
+	if (nii_call_class_method_0_no(getThis(), "ensureBehaviors" TSRMLS_CC) != SUCCESS) {
+		return;
+	}
+
+	zval *events_zv;
+	events_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_events"), 0 TSRMLS_CC);
+	if (Z_TYPE_P(events_zv) != IS_ARRAY) {
+		NII_NEW_ARRAY(events_zv);
+	}
+
+	zval *class;
+	if (zend_hash_find(Z_ARRVAL_P(events_zv), name, (uint)name_len, (void **)&class) == SUCCESS) {
+
+		if (Z_TYPE_P(class)!=IS_NULL) {
+			NII_PTR_DTOR(events_zv);
+			RETURN_TRUE;
+		}
+
+	}
+
+	NII_PTR_DTOR(events_zv);
+	RETURN_FALSE;
+
 }
 /* }}} */
 
@@ -696,17 +823,23 @@ PHP_METHOD(Component, on){
 	if (!data_zv) {
 		NII_NEW_NULL(data_zv);
 	}
-
+	NII_DEBUG_PRINTF(("in Component::on enter here 1\n"));
 	if (nii_call_class_method_0_no(getThis(), "ensureBehaviors" TSRMLS_CC) != SUCCESS) {
 		return;
 	}
+	NII_DEBUG_PRINTF(("in Component::on enter here 2\n"));
 
 	zval *events_zv;
 	events_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_events"), 0 TSRMLS_CC);
-	
+	NII_DEBUG_PRINTF(("in Component::on enter here 3\n"));
+	if (Z_TYPE_P(events_zv) != IS_ARRAY) {
+		NII_DEBUG_PRINTF(("in Component::on event is not array\n"));
+		NII_NEW_ARRAY(events_zv);
+	}
+
 	zval *class;
 	if (zend_hash_find(Z_ARRVAL_P(events_zv), name, (uint)name_len, (void **)&class) == SUCCESS) {
-
+		NII_DEBUG_PRINTF(("in Component::on enter here 4\n"));
 		zval *tmp_array_zv;
 		NII_NEW_ARRAY(tmp_array_zv);
 		add_next_index_zval(tmp_array_zv, handler_zv);
@@ -720,6 +853,7 @@ PHP_METHOD(Component, on){
 	}
 
 	NII_PTR_DTOR(data_zv);
+	NII_PTR_DTOR(events_zv);
 	return;
 }
 /* }}} */
@@ -1110,6 +1244,7 @@ PHP_METHOD(Component, ensureBehaviors){
 	if ( Z_TYPE_P(behaviors_zv) != IS_ARRAY) {
 		NII_NEW_ARRAY(behaviors_zv);
 		zend_update_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_behaviors"), behaviors_zv TSRMLS_CC);
+		NII_PTR_DTOR(behaviors_zv);
 	}
 
 	zval *behaviors_retval;
@@ -1137,7 +1272,7 @@ PHP_METHOD(Component, ensureBehaviors){
 			}
 			NII_PTR_DTOR(name_zv);
         }
-        zend_hash_move_forward_ex(Z_ARRVAL_P(behaviors_zv), &pos);
+        zend_hash_move_forward_ex(Z_ARRVAL_P(behaviors_retval), &pos);
     }
     NII_PTR_DTOR(behaviors_retval);
 

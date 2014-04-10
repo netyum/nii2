@@ -272,13 +272,18 @@ PHP_METHOD(BaseNii, autoload){
     }
 */
 PHP_METHOD(BaseNii, createObject){
-	zval *type_zv, *params_zv;
+	zval *type_zv, *params_zv=NULL;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|a", &type_zv, &params_zv) == FAILURE) {
 	  return;
 	}
 
+    NII_DEBUG_PRINTF(("There is Yii::createObject\n"));
+    if (!params_zv) {
+        NII_NEW_ARRAY(params_zv);
+    }
 	if (Z_TYPE_P(params_zv) != IS_ARRAY) {
+        NII_PTR_DTOR(params_zv);
 		NII_NEW_ARRAY(params_zv);
 	}
 
@@ -287,9 +292,36 @@ PHP_METHOD(BaseNii, createObject){
 
 	}
 	else if (Z_TYPE_P(type_zv) == IS_ARRAY) {
-		zval *class;
-		if (zend_hash_find(Z_ARRVAL_P(type_zv), NII_SL("class"), (void **)&class) == SUCCESS) {
+		zval **class;
+        zval *class_zv;
+        if (zend_hash_find(Z_ARRVAL_P(type_zv), "class", 6, (void **)&class) == SUCCESS) {
+            ZVAL_ZVAL(class_zv, *class, 1, 1);
+            add_assoc_unset(type_zv, "class");
+            if ( zend_hash_del(Z_ARRVAL_P(type_zv), "class", 6) == SUCCESS) {
+                //php_var_dump(&type_zv, 1 TSRMLS_CC);
+            }
+        }
 
+        return;
+		/*
+            zval *class_zv;
+            
+            NII_DEBUG_PRINTF(("There is find class ok\n"));
+            //add_assoc_unset(type_zv, "class");
+            if ( zend_hash_del(Z_ARRVAL_P(type_zv), "class", 6) == SUCCESS) {
+                //php_var_dump(&type_zv, 1 TSRMLS_CC);
+
+                //php_var_dump(*class, 1 TSRMLS_CC);
+                return;
+            }
+            //Z_SET_REFCOUNT_P(*class, 0);
+            //Z_UNSET_ISREF_P(*class);
+
+            //php_var_dump(class, 1 TSRMLS_CC);
+            //NII_PTR_DTOR(*class);
+
+            //NII_DEBUG_PRINTF(("%d\n", Z_TYPE_P(*class)));
+            return;
 		}
 		else {
 			zval *message_zv;
@@ -302,7 +334,7 @@ PHP_METHOD(BaseNii, createObject){
 			}
 			NII_PTR_DTOR(invalidconfigexception_zv);
 			NII_PTR_DTOR(message_zv);
-		}
+		}*/
 	}
 	else if (Z_TYPE_P(type_zv) == IS_CALLABLE) {
 		zval *retval;

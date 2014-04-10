@@ -36,6 +36,13 @@ extern zend_module_entry nii_module_entry;
 #include "TSRM.h"
 #endif
 
+#if ZEND_DEBUG
+/* debug */
+	#define NII_DEBUG_PRINTF(arg) php_printf arg
+#else
+	#define NII_DEBUG_PRINTF(arg)
+#endif
+
 #define NII_VERSION 					"1.1.14-dev"
 
 /* Declaration Class */

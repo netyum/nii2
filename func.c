@@ -58,8 +58,7 @@ void nii_concat(zval **left, zval *right TSRMLS_DC){
 	}
 }
 
-int nii_call_class_static_method(zval *object, char *class_name, char *method_name, zval **retval_ptr_ptr, zend_uint param_count, zval **params[]) {
-    TSRMLS_FETCH();
+int nii_call_class_static_method(zval *object, char *class_name, char *method_name, zval **retval_ptr_ptr, zend_uint param_count, zval **params[] TSRMLS_DC) {
 	zval *method_name_zv, *class_name_zv, *fn;
 	int status = FAILURE;
 	zend_class_entry *ce, *active_scope = NULL;
@@ -97,48 +96,48 @@ int nii_call_class_static_method(zval *object, char *class_name, char *method_na
 	return status;
 }
 
-int nii_call_class_static_method_0(zval *object, char *class_name, char *method_name, zval **retval) {
-	return nii_call_class_static_method(object, class_name, method_name, retval, 0, NULL);
+int nii_call_class_static_method_0(zval *object, char *class_name, char *method_name, zval **retval TSRMLS_DC) {
+	return nii_call_class_static_method(object, class_name, method_name, retval, 0, NULL TSRMLS_CC);
 }
 
-int nii_call_class_static_method_0_no(zval *object, char *class_name, char *method_name) {
+int nii_call_class_static_method_0_no(zval *object, char *class_name, char *method_name TSRMLS_DC) {
 	zval *retval;
 	int status;
-	status = nii_call_class_static_method(object, class_name, method_name, &retval, 0, NULL);
+	status = nii_call_class_static_method(object, class_name, method_name, &retval, 0, NULL TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }
 
-int nii_call_class_static_method_1(zval *object, char *class_name, char *method_name, zval **retval, zval *param) {
+int nii_call_class_static_method_1(zval *object, char *class_name, char *method_name, zval **retval, zval *param TSRMLS_DC) {
 	zval **params[1];
 	params[0] = &param;
-	return nii_call_class_static_method(object, class_name, method_name, retval, 1, params);
+	return nii_call_class_static_method(object, class_name, method_name, retval, 1, params TSRMLS_CC);
 }
 
-int nii_call_class_static_method_1_no(zval *object, char *class_name, char *method_name, zval *param) {
+int nii_call_class_static_method_1_no(zval *object, char *class_name, char *method_name, zval *param TSRMLS_DC) {
 	zval *retval;
 	int status;
 	zval **params[1];
 	params[0] = &param;
-	status = nii_call_class_static_method(object, class_name, method_name, &retval, 1, params);
+	status = nii_call_class_static_method(object, class_name, method_name, &retval, 1, params TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }
 
-int nii_call_class_static_method_2(zval *object, char *class_name, char *method_name, zval **retval, zval *param1, zval *param2) {
+int nii_call_class_static_method_2(zval *object, char *class_name, char *method_name, zval **retval, zval *param1, zval *param2 TSRMLS_DC) {
 	zval **params[2];
 	params[0] = &param1;
 	params[1] = &param2;
-	return nii_call_class_static_method(object, class_name, method_name, retval, 2, params);
+	return nii_call_class_static_method(object, class_name, method_name, retval, 2, params TSRMLS_CC);
 }
 
-int nii_call_class_static_method_2_no(zval *object, char *class_name, char *method_name, zval *param1, zval *param2) {
+int nii_call_class_static_method_2_no(zval *object, char *class_name, char *method_name, zval *param1, zval *param2 TSRMLS_DC) {
 	zval *retval;
 	int status;
 	zval **params[2];
 	params[0] = &param1;
 	params[1] = &param2;
-	status = nii_call_class_static_method(object, class_name, method_name, &retval, 2, params);
+	status = nii_call_class_static_method(object, class_name, method_name, &retval, 2, params TSRMLS_CC);
 	NII_PTR_DTOR(retval);
 	return status;
 }

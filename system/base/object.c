@@ -176,7 +176,7 @@ PHP_METHOD(Object, __set){
 		return;
 	}
 
-	if (nii_setter(getThis(), name, value TSRMLS_CC)) return;
+	if (nii_setter(getThis(), name, value TSRMLS_CC) == SUCCESS) return;
 
 	//get class name
 	const char *classname; 

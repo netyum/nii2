@@ -33,14 +33,14 @@ int nii_new_class_instance_0(zval **return_value, char *class_name TSRMLS_DC);
 int nii_new_class_instance_1(zval **return_value, char *class_name, zval *param TSRMLS_DC);
 
 /* call call static method */
-int nii_call_class_static_method(zval *object, char *class_name, char *method_name, zval **retval_ptr_ptr, zend_uint param_count, zval **params[]);
+int nii_call_class_static_method(zval *object, char *class_name, char *method_name, zval **retval_ptr_ptr, zend_uint param_count, zval **params[] TSRMLS_DC);
 int nii_find_scope(zend_class_entry *ce, char *method_name TSRMLS_DC);
 
-int nii_call_class_static_method_0(zval *object, char *class_name, char *method_name, zval **retval);
-int nii_call_class_static_method_0_no(zval *object, char *class_name, char *method_name);
-int nii_call_class_static_method_1(zval *object, char *class_name, char *method_name, zval **retval, zval *param);
-int nii_call_class_static_method_1_no(zval *object, char *class_name, char *method_name, zval *param);
-int nii_call_class_static_method_2(zval *object, char *class_name, char *method_name, zval **retval, zval *param1, zval *param2);
-int nii_call_class_static_method_2_no(zval *object, char *class_name, char *method_name, zval *param1, zval *param2);
+int nii_call_class_static_method_0(zval *object, char *class_name, char *method_name, zval **retval TSRMLS_DC);
+int nii_call_class_static_method_0_no(zval *object, char *class_name, char *method_name TSRMLS_DC);
+int nii_call_class_static_method_1(zval *object, char *class_name, char *method_name, zval **retval, zval *param TSRMLS_DC);
+int nii_call_class_static_method_1_no(zval *object, char *class_name, char *method_name, zval *param TSRMLS_DC);
+int nii_call_class_static_method_2(zval *object, char *class_name, char *method_name, zval **retval, zval *param1, zval *param2 TSRMLS_DC);
+int nii_call_class_static_method_2_no(zval *object, char *class_name, char *method_name, zval *param1, zval *param2 TSRMLS_DC);
 
 
