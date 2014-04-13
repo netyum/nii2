@@ -292,62 +292,20 @@ PHP_METHOD(BaseNii, createObject){
 
 	}
 	else if (Z_TYPE_P(type_zv) == IS_ARRAY) {
-	        zval **class;
-                zval *class_zv;
-                if (zend_hash_find(Z_ARRVAL_P(type_zv), NII_SS("class"), (void **)&class) == SUCCESS) {
-		    //char *class_name;
-		    //class_name = estrndup(Z_STRVAL_P(*class), Z_STRLEN_P(*class));
-		    MAKE_STD_ZVAL(class_zv);
-		    ZVAL_ZVAL(class_zv, *class, 1, 0);
-                    if ( zend_hash_del(Z_ARRVAL_P(type_zv), "class", sizeof("class")) == SUCCESS) {
-			//NII_NEW_STRING(class_zv, class_name);
-			//RETVAL_STRING(class_zv, 1);
-			NII_PTR_DTOR(class_zv);
-	                NII_PTR_DTOR(params_zv);
-			//efree(class_name);
-			return;
-                    }
-                    else {
-                        NII_DEBUG_PRINTF(("NO\n"));
-                    }
-	            NII_PTR_DTOR(params_zv);
-                    return;
-                }
-		return;
-	//RETURN_TRUE;
-        //return;
-		/*
-            zval *class_zv;
-            
-            NII_DEBUG_PRINTF(("There is find class ok\n"));
-            //add_assoc_unset(type_zv, "class");
-            if ( zend_hash_del(Z_ARRVAL_P(type_zv), "class", 6) == SUCCESS) {
-                //php_var_dump(&type_zv, 1 TSRMLS_CC);
+        zval **class;
+        zval *class_zv;
+        if (zend_hash_find(Z_ARRVAL_P(type_zv), NII_SS("class"), (void **)&class) == SUCCESS) {
+            MAKE_STD_ZVAL(class_zv);
+            ZVAL_ZVAL(class_zv, *class, 1, 0);
+            if ( zend_hash_del(Z_ARRVAL_P(type_zv), "class", sizeof("class")) == SUCCESS) {
 
-                //php_var_dump(*class, 1 TSRMLS_CC);
+                //static::$container->get($class, $params, $type);
+                NII_PTR_DTOR(class_zv);
+                NII_PTR_DTOR(params_zv);
                 return;
             }
-            //Z_SET_REFCOUNT_P(*class, 0);
-            //Z_UNSET_ISREF_P(*class);
-
-            //php_var_dump(class, 1 TSRMLS_CC);
-            //NII_PTR_DTOR(*class);
-
-            //NII_DEBUG_PRINTF(("%d\n", Z_TYPE_P(*class)));
-            return;
-		}
-		else {
-			zval *message_zv;
-			NII_NEW_STRING(message_zv, "Object configuration must be an array containing a \"class\" element.");
-			zval *invalidconfigexception_zv;
-			MAKE_STD_ZVAL(invalidconfigexception_zv);
-			if (nii_new_class_instance_1(&invalidconfigexception_zv, "nii\\base\\InvalidConfigException", message_zv TSRMLS_CC) == SUCCESS) {
-				zend_throw_exception_object(invalidconfigexception_zv TSRMLS_CC);
-				return;
-			}
-			NII_PTR_DTOR(invalidconfigexception_zv);
-			NII_PTR_DTOR(message_zv);
-		}*/
+            NII_PTR_DTOR(class_zv);
+        }
 	}
 	else if (Z_TYPE_P(type_zv) == IS_CALLABLE) {
 		zval *retval;

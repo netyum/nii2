@@ -1,0 +1,3 @@
+NII_CLASS_DECLARE_ENTRY_EX(di_instance);
+
+NII_CLASS_FUNCTION(di_instance);

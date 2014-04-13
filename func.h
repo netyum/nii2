@@ -26,6 +26,8 @@ int nii_call_class_method_1(zval *object, char *method_name, zval **retval, zval
 int nii_call_class_method_1_no(zval *object, char *method_name, zval *param TSRMLS_DC);
 int nii_call_class_method_2(zval *object, char *method_name, zval **retval, zval *param1, zval *param2 TSRMLS_DC);
 int nii_call_class_method_2_no(zval *object, char *method_name, zval *param1, zval *param2 TSRMLS_DC);
+int nii_call_class_method_3(zval *object, char *method_name, zval **retval, zval *param1, zval *param2, zval *param3 TSRMLS_DC);
+int nii_call_class_method_3_no(zval *object, char *method_name, zval *param1, zval *param2, zval *param3 TSRMLS_DC);
 
 /* new class */
 int nii_new_class_instance(zval **return_value, char *class_name, zend_uint param_count, zval **params[] TSRMLS_DC);

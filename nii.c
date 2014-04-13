@@ -49,6 +49,12 @@
 #include "system/base/invalidparamexception.h"
 #include "system/base/invalidrouteexception.h"
 
+#include "system/di/container.h"
+#include "system/di/instance.h"
+#include "system/di/servicelocator.h"
+
+
+
   
 
 
@@ -125,6 +131,10 @@ PHP_MINIT_FUNCTION(nii)
 	NII_CLASS(base_invalidparamexception);
 	NII_CLASS(base_invalidrouteexception);
 
+	NII_CLASS(di_container);
+	NII_CLASS(di_instance);
+	NII_CLASS(di_servicelocator);
+	
 
 	return SUCCESS;
 }

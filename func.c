@@ -344,6 +344,25 @@ int nii_call_class_method_2_no(zval *object, char *method_name, zval *param1, zv
 	return status;
 }
 
+int nii_call_class_method_3(zval *object, char *method_name, zval **retval, zval *param1, zval *param2, zval *param3 TSRMLS_DC) {
+	zval **params[3];
+	params[0] = &param1;
+	params[1] = &param2;
+	params[2] = &param3;
+	return nii_call_class_method(object, method_name, retval, 3, params TSRMLS_CC);
+}
+
+int nii_call_class_method_3_no(zval *object, char *method_name, zval *param1, zval *param2, zval *param3 TSRMLS_DC) {
+	zval **params[3], *retval;
+	params[0] = &param1;
+	params[1] = &param2;
+	params[2] = &param3;
+	int status;
+	status = nii_call_class_method(object, method_name, &retval, 3, params TSRMLS_CC);
+	NII_PTR_DTOR(retval);
+	return status;
+}
+
 int nii_find_scope(zend_class_entry *ce, char *method_name TSRMLS_DC){
 
 	char *lcname = zend_str_tolower_dup(method_name, strlen(method_name));

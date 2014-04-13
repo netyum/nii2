@@ -26,6 +26,10 @@ if test "$PHP_NII" = "yes"; then
 	system/base/notsupportedexception.c \
 	system/base/invalidparamexception.c \
 	system/base/invalidrouteexception.c \
+	\
+	system/di/container.c \
+	system/di/instance.c \
+	system/di/servicelocator.c \
 	,
   $ext_shared)
 fi
