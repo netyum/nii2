@@ -44,5 +44,5 @@ int nii_call_class_static_method_1(zval *object, char *class_name, char *method_
 int nii_call_class_static_method_1_no(zval *object, char *class_name, char *method_name, zval *param TSRMLS_DC);
 int nii_call_class_static_method_2(zval *object, char *class_name, char *method_name, zval **retval, zval *param1, zval *param2 TSRMLS_DC);
 int nii_call_class_static_method_2_no(zval *object, char *class_name, char *method_name, zval *param1, zval *param2 TSRMLS_DC);
-
+int nii_isnot_empty(zval *op);
 

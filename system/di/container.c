@@ -479,7 +479,7 @@ PHP_METHOD(Container, build){
         }
     }
 */
-PHP_METHOD(Container, mergeParams){
+PHP_METHOD(Container, mergeParams){/*
     zval *params;
     char *class;
     int class_len;
@@ -499,7 +499,43 @@ PHP_METHOD(Container, mergeParams){
     if (zend_hash_exists(Z_ARRVAL_P(params_zv), NII_SS(class)) == 0) {
         RETURN_ZVAL(params, 1, 0);
     }
-    else if ()
+    else if (nii_isnot_empty(params)==0) {
+        zval **params_retval;
+        if ( zend_hash_find(Z_ARRVAL_P(params_zv), NII_SS(class), (void **)&params_retval) == SUCCESS) {
+            RETVAL_ZVAL(*params_retval, 1, 0);
+            return;
+        }
+        NII_PTR_DTOR(*params_retval);
+    }
+    else {
+        zval **params_retval;
+        if ( zend_hash_find(Z_ARRVAL_P(params_zv), NII_SS(class), (void **)&params_retval) != SUCCESS) {
+            return;
+        }
+
+        if (Z_TYPE_P(params) != IS_ARRAY) return;
+        if (Z_TYPE_P(*params_retval) != IS_ARRAY) return;
+
+        HashPosition    pos;
+        zval **entry;
+        char *string_key;
+        uint string_key_len;
+        ulong index;
+
+        zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(params), &pos);
+        while (zend_hash_get_current_data_ex(Z_ARRVAL_P(params), (void **)&entry, &pos) == SUCCESS) {
+            if (zend_hash_get_current_key_ex(Z_ARRVAL_P(params), &string_key, &string_key_len, &index, 0, &pos) == HASH_KEY_IS_STRING) {
+                add_assoc_zval(*params_retval, string_key, *entry);
+            }
+            else {
+                add_index_zval(*params_retval, index, *entry);
+            }
+            zend_hash_move_forward_ex(Z_ARRVAL_P(params), &pos);
+        }
+
+        RETVAL_ZVAL(*params_retval, 1, 0);
+        return;
+    }*/
 }
 /* }}} */
 
