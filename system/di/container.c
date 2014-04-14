@@ -11,7 +11,7 @@
 #include "ext/standard/php_var.h"
 #include "ext/spl/spl_iterators.h"
 #include "zend_globals.h"
-#include "zend_exceptions.h"
+#include "Zend/zend_exceptions.h"
 #include "php_nii.h"
 #include "func.h"
 #include "nii_func.h"
@@ -33,7 +33,7 @@ ZEND_END_ARG_INFO()
 //set
 ZEND_BEGIN_ARG_INFO_EX(arginfo_di_container_set, 0, 0, 1)
     ZEND_ARG_INFO(0, class)
-	ZEND_ARG_ARRAY_INFO(0, definition, 0)
+	ZEND_ARG_INFO(0, definition)
 	ZEND_ARG_ARRAY_INFO(0, params, 0)
 ZEND_END_ARG_INFO()
 
@@ -289,7 +289,73 @@ PHP_METHOD(Container, get){
     }
 */
 PHP_METHOD(Container, set){
+    zval *params = NULL, *definition = NULL;
+    char *class;
+    int class_len;
 
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|za", &class, &class_len, &definition, &params) == FAILURE) {
+        return;
+    }
+
+    zval *singletons_zv;
+    singletons_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_singletons"), 0 TSRMLS_CC);
+
+    if (Z_TYPE_P(singletons_zv) != IS_ARRAY) {
+        NII_NEW_ARRAY(singletons_zv);
+    }
+
+    zval *class_zv;
+    NII_NEW_STRING(class_zv, class);
+
+    if (params == NULL) {
+        NII_NEW_ARRAY(params);
+    }
+
+    if (definition == NULL) {
+        NII_NEW_ARRAY(definition);
+    }
+
+    zval *definitions_zv;
+    definitions_zv = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_definitions"), 0 TSRMLS_CC);
+
+    if (Z_TYPE_P(definitions_zv) != IS_ARRAY) {
+        NII_NEW_ARRAY(definitions_zv);
+    }
+
+    zval *normalizedefinition_retval;
+
+    if (nii_call_class_method_2(getThis(), "normalizeDefinition", &normalizedefinition_retval, class_zv, definition TSRMLS_CC) != SUCCESS) {
+        return;
+    }
+    
+    NII_PTR_DTOR(class_zv);
+
+    add_assoc_zval(definitions_zv, class, normalizedefinition_retval);
+    zend_update_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_definitions"), definitions_zv TSRMLS_CC);
+    NII_PTR_DTOR(definitions_zv);
+    NII_PTR_DTOR(normalizedefinition_retval);
+
+    zval *_params;
+    _params = zend_read_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_params"), 0 TSRMLS_CC);
+    if (Z_TYPE_P(_params) != IS_ARRAY) {
+        NII_NEW_ARRAY(_params);
+    }
+    add_assoc_zval(_params, class, params);
+    zend_update_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_params"), _params TSRMLS_CC);
+    NII_PTR_DTOR(_params);
+
+    if ( zend_hash_exists(Z_ARRVAL_P(singletons_zv), NII_SS(class)) == 1) {
+        if ( zend_hash_del(Z_ARRVAL_P(singletons_zv), class, class_len+1) != SUCCESS) {
+            return;
+        }
+        zend_update_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_singletons"), singletons_zv TSRMLS_CC);
+    }
+    NII_PTR_DTOR(singletons_zv);
+
+    NII_PTR_DTOR(params);
+    NII_PTR_DTOR(definition);
+    RETVAL_ZVAL(getThis(), 1, 0);
+    return;
 }
 /* }}} */
 
@@ -381,16 +447,22 @@ PHP_METHOD(Container, clear){
     }
 
     if ( zend_hash_del(Z_ARRVAL_P(singletons_zv), "class", sizeof("class")) != SUCCESS) {
+        NII_PTR_DTOR(singletons_zv);
+        NII_PTR_DTOR(definitions_zv);
         return;
     }
 
     if ( zend_hash_del(Z_ARRVAL_P(definitions_zv), "class", sizeof("class")) != SUCCESS) {
+        NII_PTR_DTOR(singletons_zv);
+        NII_PTR_DTOR(definitions_zv);
         return;
     }
 
     zend_update_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_singletons"), singletons_zv TSRMLS_CC);
     zend_update_property(Z_OBJCE_P(getThis()), getThis(), NII_SL("_definitions"), definitions_zv TSRMLS_CC);
 
+    NII_PTR_DTOR(singletons_zv);
+    NII_PTR_DTOR(definitions_zv);
     return;
 }
 /* }}} */
@@ -419,6 +491,93 @@ PHP_METHOD(Container, clear){
     }
 */
 PHP_METHOD(Container, normalizeDefinition){
+    char *class;
+    int class_len;
+    zval *definition;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &class, &class_len, &definition) == FAILURE) {
+        return;
+    }
+
+    if (nii_isnot_empty(definition) == 0) {
+        NII_DEBUG_PRINTF(("1 in normalizeDefinition\n"));
+        array_init(return_value);
+        add_assoc_stringl(return_value, "class", class, class_len, 1);
+        return;
+    }
+    else if (Z_TYPE_P(definition) == IS_STRING) {
+        //NII_DEBUG_PRINTF(("2 in normalizeDefinition\n"));
+        array_init(return_value);
+        add_assoc_zval(return_value, "class", definition);
+        return;
+    }
+    else if (Z_TYPE_P(definition) == IS_CALLABLE || Z_TYPE_P(definition) == IS_OBJECT) {
+        RETVAL_ZVAL(definition, 1, 0);
+        NII_DEBUG_PRINTF(("3 in normalizeDefinition\n"));
+        return;
+    }
+    else if (Z_TYPE_P(definition) == IS_ARRAY) {
+        NII_DEBUG_PRINTF(("4 in normalizeDefinition\n"));
+        if (zend_hash_exists(Z_ARRVAL_P(definition), NII_SS("class")) == 0) {
+            //if (strpos($class, '\\') !== false) {
+            zval *find_zv, *class_zv, *strpos_retval;
+            NII_NEW_STRING(find_zv, "\\");
+            NII_NEW_STRING(class_zv, class);
+            if (nii_call_user_fun_2("strpos", &strpos_retval, class_zv, find_zv TSRMLS_CC) != SUCCESS) {
+                return;
+            }
+            NII_PTR_DTOR(class_zv);
+            NII_PTR_DTOR(find_zv);
+            if (Z_TYPE_P(strpos_retval) == IS_LONG && Z_LVAL_P(strpos_retval) == 0) {
+                add_assoc_stringl(definition, "class", class, class_len, 1);
+                RETVAL_ZVAL(definition, 1, 0);
+                NII_PTR_DTOR(strpos_retval);
+                return;
+            }
+            else {
+                NII_PTR_DTOR(strpos_retval);
+
+                zval *message_zv;
+                NII_NEW_STRING(message_zv, "A class definition requires a \"class\" member.");
+
+                zval *invalidconfigexception_zv;
+                MAKE_STD_ZVAL(invalidconfigexception_zv);
+                if (nii_new_class_instance_1(&invalidconfigexception_zv, "nii\\base\\InvalidConfigException", message_zv TSRMLS_CC) == SUCCESS) {
+                    NII_DEBUG_PRINTF(("33333333333333333\n"));
+                    php_var_dump(&invalidconfigexception_zv, 1 TSRMLS_CC);
+                    zend_throw_exception_object(invalidconfigexception_zv TSRMLS_CC);
+                }
+                return;
+            }
+        }
+        RETVAL_ZVAL(definition, 1, 0);
+        return;
+    }
+    else {
+        NII_DEBUG_PRINTF(("5 in normalizeDefinition\n"));
+        zval *type_name_zv;
+        if (nii_call_user_fun_1("gettype", &type_name_zv, definition TSRMLS_CC) != SUCCESS) {
+            return;
+        }
+
+        char *message;
+        int message_len;
+        zval *message_zv;
+
+        message_len = spprintf(&message, 0, "Unsupported definition type for \"%s\": ", class);
+        NII_NEW_STRING(message_zv, message);
+        nii_concat(&message_zv, type_name_zv TSRMLS_CC);
+
+        zval *invalidconfigexception_zv;
+        MAKE_STD_ZVAL(invalidconfigexception_zv);
+        if (nii_new_class_instance_1(&invalidconfigexception_zv, "nii\\base\\InvalidConfigException", message_zv TSRMLS_CC) == SUCCESS) {
+            zend_throw_exception_object(invalidconfigexception_zv TSRMLS_CC);
+            return;
+        }
+
+        NII_PTR_DTOR(invalidconfigexception_zv);
+        NII_PTR_DTOR(message_zv);
+        efree(message);
+    }
 
 }
 /* }}} */
@@ -479,7 +638,7 @@ PHP_METHOD(Container, build){
         }
     }
 */
-PHP_METHOD(Container, mergeParams){/*
+PHP_METHOD(Container, mergeParams){
     zval *params;
     char *class;
     int class_len;
@@ -535,7 +694,7 @@ PHP_METHOD(Container, mergeParams){/*
 
         RETVAL_ZVAL(*params_retval, 1, 0);
         return;
-    }*/
+    }
 }
 /* }}} */
 
